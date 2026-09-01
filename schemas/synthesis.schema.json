@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "synthesis.schema.json",
+  "title": "Wiki Memory synthesis frontmatter",
+  "$ref": "./temporal-frontmatter.schema.json"
+}

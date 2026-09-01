@@ -36,7 +36,7 @@ Most knowledge tools make you choose between convenience and ownership. Wiki Mem
 | **Adaptable** | Onboarding designs vault boundaries and taxonomy from the user's needs—no client structure by default. |
 | **Searchable** | QMD provides exact, semantic, and hybrid retrieval without sending the memory to a hosted vector database. |
 | **Portable** | Obsidian opens every vault; Syncthing can mirror the complete memory across devices. |
-| **Auditable** | Hashes, canonical URLs, revisions, epistemic status, broken links, orphans, and contradictions remain inspectable. |
+| **Auditable** | Every fact can keep its source, real-world dates, memory dates, and replacement history. |
 
 ## Install in two commands
 
@@ -91,8 +91,9 @@ The interview then covers goals, sources, audiences, confidentiality boundaries,
 | **Source capture** | Accepts files, URLs, and pasted text; preserves raw material and normalized source notes separately. |
 | **Document ingestion** | Uses [Docling](https://github.com/docling-project/docling) for structured Markdown conversion and OCR-capable formats. |
 | **Local search** | Uses [QMD](https://github.com/tobi/qmd) for exact, semantic, and hybrid retrieval with source paths. |
+| **Temporal memory** | Distinguishes when a fact was true from when the memory learned it, preserves replaced facts, and supports point-in-time questions. |
 | **Social saves** | Browser-assisted collection for Instagram, LinkedIn, Reddit, X, and selected YouTube playlists, filed by platform and collection. |
-| **Quality control** | Detects broken wikilinks, ambiguous links, missing raw files, orphaned sources, and invalid frontmatter. |
+| **Quality control** | Detects broken links, missing originals, orphaned sources, invalid temporal metadata, and broken replacement chains. |
 | **Optional synchronization** | On request, configures `Agent/` and `Mémoire/` separately in Syncthing and verifies the other device, versioning, or separate backup readiness. |
 | **Interoperability** | Imports normalized social captures and Karakeep JSON exports without changing the source of truth. |
 
@@ -119,6 +120,19 @@ installation-root/
 
 Models, indexes, Python environments, Node packages, browser state, caches, and logs stay in the operating system's user-data directory—not in synchronized vaults. See the full [architecture guide](docs/ARCHITECTURE.md).
 
+The durable flow stays understandable without the tool:
+
+```text
+Preserved source ---> Sourced, dated fact ---> Verifiable answer
+                           |
+                           +-- when was it true?
+                           +-- when did memory learn it?
+
+Preserved old fact ---> Current replacement
+```
+
+A changed fact is never silently erased. The old note records when it stopped being true and links to its replacement. If the source provides no date, Wiki Memory leaves the date empty and exposes an open question instead of guessing.
+
 When social sources are enabled, the agent explains the benefits and limits, verifies dependencies, asks for platforms, collections, destination folders, and media rules, then opens the controlled Codex browser for interactive sign-in. After a successful test sync, it offers manual, daily, weekly, or custom scheduling with a local time, timezone, and report destination. Credentials are never requested in chat or copied into the memory.
 
 ## Eight agent workflows
@@ -129,9 +143,9 @@ When social sources are enabled, the agent explains the benefits and limits, ver
 | `$wiki-memory-router` | decide where new knowledge belongs |
 | `$wiki-memory-capture` | preserve a source without losing provenance |
 | `$wiki-memory-ingest` | convert a document or page into structured Markdown |
-| `$wiki-memory-query` | answer from the memory with traceable sources |
+| `$wiki-memory-query` | answer from current or point-in-time memory with traceable sources |
 | `$wiki-memory-social-sync` | collect saved social items through a controlled browser |
-| `$wiki-memory-lint` | find structural and knowledge-quality problems |
+| `$wiki-memory-lint` | find structural, temporal, and knowledge-quality problems |
 | `$wiki-memory-doctor` | diagnose installation, vault, search, and sync health |
 
 ## Social collection is deliberately conservative
@@ -146,6 +160,7 @@ Supported targets are Instagram saved items and collections, LinkedIn saved post
 - No secrets, browser sessions, or personal fixtures in this repository.
 - Synthetic test data only.
 - Original sources are not rewritten to make claims cleaner.
+- Replaced facts remain readable and linked to their successors.
 - Facts, inferences, open questions, and unverified claims can be distinguished explicitly.
 - CI scans for secrets, personal paths, unsafe fixtures, and regressions on macOS, Linux, and Windows.
 

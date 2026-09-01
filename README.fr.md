@@ -35,7 +35,7 @@ La couche durable reste volontairement simple : des dossiers, du Markdown, du fr
 | **Adaptable** | L'onboarding construit les vaults et la taxonomie depuis vos besoins, sans imposer de mémoire client. |
 | **Interrogeable** | QMD fournit une recherche exacte, sémantique et hybride entièrement locale. |
 | **Portable** | Chaque vault s'ouvre dans Obsidian et la mémoire complète peut être répliquée avec Syncthing. |
-| **Auditable** | Hashes, URLs canoniques, révisions, statut épistémique, liens cassés et sources orphelines restent visibles. |
+| **Auditable** | Chaque fait peut conserver sa source, ses dates réelles, ses dates de mémoire et son historique de remplacement. |
 
 ## Installation en deux commandes
 
@@ -87,8 +87,9 @@ Les questions portent ensuite sur les objectifs, sources, audiences, frontières
 | **Capture de sources** | Accepte fichiers, URLs et texte collé ; sépare l'original brut de la note normalisée. |
 | **Ingestion documentaire** | Utilise [Docling](https://github.com/docling-project/docling) pour la conversion structurée et les formats compatibles OCR. |
 | **Recherche locale** | Utilise [QMD](https://github.com/tobi/qmd) pour la recherche exacte, sémantique et hybride. |
+| **Mémoire temporelle** | Distingue quand un fait était vrai de quand la mémoire l'a appris, conserve les anciens faits et répond à une date donnée. |
 | **Contenus enregistrés** | Collecte assistée par navigateur pour Instagram, LinkedIn, Reddit, X et YouTube, classée par plateforme et collection. |
-| **Contrôle qualité** | Détecte liens cassés, liens ambigus, sources orphelines, originaux manquants et frontmatter invalide. |
+| **Contrôle qualité** | Détecte liens cassés, sources orphelines, originaux manquants, dates invalides et chaînes de remplacement cassées. |
 | **Synchronisation facultative** | Sur demande, configure séparément `Agent/` et `Mémoire/` dans Syncthing et vérifie l'autre appareil, le versioning ou la sauvegarde séparée. |
 
 ## Architecture
@@ -113,6 +114,19 @@ racine-installation/
 ```
 
 Les modèles, index, environnements Python, paquets Node, sessions navigateur, caches et logs restent hors des vaults synchronisés. Consultez le [guide d'architecture](docs/ARCHITECTURE.md).
+
+Le fonctionnement reste compréhensible sans l'outil :
+
+```text
+Source conservée ---> Fait sourcé et daté ---> Réponse vérifiable
+                           |
+                           +-- c'était vrai quand ?
+                           +-- la mémoire l'a appris quand ?
+
+Ancien fait conservé ---> Nouveau fait courant
+```
+
+Un fait qui change n'est jamais effacé silencieusement. L'ancienne note indique jusqu'à quand elle était vraie et pointe vers son remplacement. Si la source ne fournit aucune date, Wiki Memory laisse la date vide et affiche une question ouverte plutôt que d'inventer.
 
 Lors de l'activation des réseaux sociaux, l'agent explique l'intérêt et les limites du scan, vérifie les dépendances, demande les plateformes, collections, dossiers de destination et règles média, puis ouvre le navigateur Codex pour une connexion interactive. Après un premier test, il propose une synchronisation manuelle, quotidienne, hebdomadaire ou personnalisée avec heure, fuseau et destination du compte rendu. Les identifiants ne sont jamais demandés dans la conversation ni copiés dans la mémoire.
 

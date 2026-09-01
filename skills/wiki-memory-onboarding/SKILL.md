@@ -28,6 +28,50 @@ After the user accepts the first-launch welcome, do this before asking classific
 
 Onboarding must not silently claim success after a package-manager, network, or permission error. Preserve the bootstrap's status and recovery link in the response, translated or summarized in the conversation language. Never tell the user to invoke a named skill or copy a technical prompt.
 
+## Explain the memory in plain language
+
+After the dependency gate passes and before asking how the memory should be organized, explain the operating model to a non-technical user. Keep the explanation short, concrete, and in the conversation language. Show this localized ASCII graph (translate labels when the conversation is not in French):
+
+```text
+CE QUE VOUS DONNEZ
+fichier · mail · réunion · page web
+              |
+              v
++------------------------------+
+| 01-SOURCES                   |
+| La preuve d'origine, gardée |
++------------------------------+
+              |
+              | "ce fait vient d'ici"
+              v
++------------------------------+
+| 02-WIKI                      |
+| Faits courts + lien source   |
+| + quand c'était vrai       |
+| + quand la mémoire l'a su   |
++------------------------------+
+              |
+              v
++------------------------------+
+| 03-SYNTHÈSES                 |
+| Réponses et livrables       |
+| que l'on peut vérifier       |
++------------------------------+
+
+Si un fait change :
+
+[ancien fait, conservé] ---> [nouveau fait, courant]
+         "remplacé par"          "remplace"
+```
+
+Explain the three consequences in ordinary language:
+
+- an answer can be traced back to the source that supports it;
+- a changed fact is kept as history instead of being silently erased;
+- when a date or proof is missing, the memory shows an open question instead of guessing.
+
+Define "source", "fact", "current", and "verification" if the user may not know them. Avoid database, graph, schema, vector, embedding, frontmatter, and bi-temporal jargon unless the user asks. Invite questions, but do not turn this explanation into a technical lesson or block the interview when the user is ready to continue.
+
 ## Durable installation layout
 
 Use one user-selected installation root with exactly these two durable sibling directories at its top level:

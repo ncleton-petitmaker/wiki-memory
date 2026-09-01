@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "temporal-frontmatter.schema.json",
+  "title": "Wiki Memory temporal frontmatter",
+  "type": "object",
+  "properties": {
+    "valid_from": {"$ref": "#/$defs/worldTime"},
+    "valid_until": {"$ref": "#/$defs/worldTime"},
+    "recorded_at": {"$ref": "#/$defs/systemTime"},
+    "invalidated_at": {"$ref": "#/$defs/systemTime"},
+    "supersedes": {"$ref": "#/$defs/wikilink"},
+    "superseded_by": {"$ref": "#/$defs/wikilink"}
+  },
+  "$defs": {
+    "worldTime": {
+      "anyOf": [
+        {"type": "string", "format": "date"},
+        {"type": "string", "format": "date-time"},
+        {"type": "null"}
+      ]
+    },
+    "systemTime": {
+      "anyOf": [
+        {"type": "string", "format": "date-time"},
+        {"type": "null"}
+      ]
+    },
+    "wikilink": {
+      "anyOf": [
+        {"type": "string", "pattern": "^\\[\\[[^\\]\\r\\n]+\\]\\]$"},
+        {"type": "null"}
+      ]
+    }
+  },
+  "additionalProperties": true
+}

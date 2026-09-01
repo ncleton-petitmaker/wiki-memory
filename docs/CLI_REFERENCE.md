@@ -66,6 +66,8 @@ Optional metadata:
 
 `--file`, `--url`, and `--text` are mutually exclusive. `--media` can be repeated.
 
+The JSON result includes `fact_temporal_defaults` for an immediately extracted fact. `recorded_at` is automatic. `valid_from` uses the explicit source date when available and remains null when the source is undated; capture time is never used as a substitute. An undated source also produces an `open_questions` entry for the ingestion workflow to record in the vault's gaps report.
+
 ## Ingest with Docling
 
 ```bash
@@ -104,17 +106,28 @@ Configures one QMD collection per vault, updates the local index, and optionally
 
 ```bash
 wiki-memory query ROOT "QUESTION" --limit 10
+wiki-memory query ROOT "What did the memory know?" --system-at 2025-06-01
+wiki-memory query ROOT "What was true?" --valid-at 2025-06-01
 ```
 
-Uses QMD when available and returns structured local results. A text-search fallback remains available for basic recovery.
+Uses QMD when available and returns structured local results. A text-search fallback remains available for basic recovery. Current facts are used by default. `--system-at` filters on when the memory knew a fact; `--valid-at` filters on when the fact was true in the world. French and English questions equivalent to "what did the memory know" or "what was true" also select the matching axis when they contain an ISO or `DD/MM/YYYY` date. The result reports the selected temporal view and lists stale facts excluded from it.
 
 ## Lint
 
 ```bash
 wiki-memory lint ROOT
+wiki-memory lint ROOT --contradiction VAULT/02-Wiki/FACT_A.md VAULT/02-Wiki/FACT_B.md
 ```
 
-Checks source frontmatter, raw-file references, broken and ambiguous wikilinks, and orphaned sources.
+Checks source frontmatter, raw-file references, broken and ambiguous wikilinks, orphaned sources, temporal metadata, and supersession chains. `--contradiction` can be repeated. It compares a semantically identified pair and returns a read-only `ready` or `ambiguous` resolution proposal; it never edits either note.
+
+## Temporal maintenance
+
+```bash
+wiki-memory maintenance ROOT --older-than-months 6
+```
+
+Lists undated facts, current facts whose newest dated source is older than the selected number of calendar months, and broken supersession chains. The command is read-only and never deletes or rewrites a note.
 
 ## Doctor
 

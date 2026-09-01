@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -10,6 +11,19 @@ from .config import CONFIG_NAME, REGISTRY_NAME, load_memory, load_registry, load
 from .installation import validate_installation_layout
 from .layout import STIGNORE
 from .dependencies import dependency_report
+from .temporal import (
+    iter_temporal_notes,
+    note_index,
+    parse_temporal_date,
+    resolve_wikilink,
+    source_links,
+    source_valid_from,
+    subtract_calendar_months,
+    supersession_findings,
+    supersession_proposal,
+    temporal_decision,
+    validate_temporal_metadata,
+)
 
 
 REQUIRED_SOURCE_FIELDS = {
@@ -34,7 +48,12 @@ def _syncthing_ignore_is_safe(path: Path) -> bool:
     return required.issubset(actual)
 
 
-def lint_memory(root: Path) -> dict[str, Any]:
+def lint_memory(
+    root: Path,
+    contradiction_pairs: list[tuple[str, str]] | None = None,
+    *,
+    observed_at: str | None = None,
+) -> dict[str, Any]:
     errors: list[dict[str, str]] = []
     warnings: list[dict[str, str]] = []
     note_names: dict[str, list[str]] = {}
@@ -65,7 +84,120 @@ def lint_memory(root: Path) -> dict[str, Any]:
                 errors.append({"code": "missing-raw", "path": str(path.relative_to(root)), "detail": str(raw)})
             if path.stem.lower() not in linked_stems:
                 warnings.append({"code": "orphan-source", "path": str(path.relative_to(root)), "detail": "not linked"})
-    return {"ok": not errors, "errors": errors, "warnings": warnings, "counts": {"notes": len(markdown)}}
+    temporal_notes = list(iter_temporal_notes(root))
+    for note in temporal_notes:
+        errors.extend(validate_temporal_metadata(note))
+    warnings.extend(supersession_findings(root, temporal_notes))
+
+    proposals: list[dict[str, Any]] = []
+    pairs: list[tuple[str, str]] = list(contradiction_pairs or [])
+    indexed = note_index(temporal_notes)
+    by_path = {note.path: note for note in temporal_notes}
+    for newer in temporal_notes:
+        if not newer.metadata.get("supersedes"):
+            continue
+        older_path = resolve_wikilink(
+            root,
+            newer.path,
+            newer.metadata.get("supersedes"),
+            by_stem=indexed,
+        )
+        older = by_path.get(older_path) if older_path is not None else None
+        if older is None:
+            continue
+        incomplete = (
+            older.metadata.get("superseded_by") in (None, "")
+            or older.metadata.get("valid_until") in (None, "")
+            or older.metadata.get("invalidated_at") in (None, "")
+        )
+        if incomplete:
+            pairs.append((older.relative_path, newer.relative_path))
+
+    seen_pairs: set[frozenset[str]] = set()
+    for left, right in pairs:
+        pair_key = frozenset((str(left), str(right)))
+        if pair_key in seen_pairs:
+            continue
+        seen_pairs.add(pair_key)
+        try:
+            proposals.append(supersession_proposal(root, left, right, observed_at=observed_at))
+        except (OSError, ValueError) as exc:
+            errors.append({"code": "invalid-contradiction-pair", "path": str(left), "detail": str(exc)})
+    return {
+        "ok": not errors,
+        "errors": errors,
+        "warnings": warnings,
+        "resolution_proposals": proposals,
+        "counts": {"notes": len(markdown), "temporal_notes": len(temporal_notes)},
+    }
+
+
+def maintenance_report(
+    root: Path,
+    *,
+    older_than_months: int,
+    now: str | None = None,
+) -> dict[str, Any]:
+    root = root.resolve()
+    if older_than_months < 0:
+        raise ValueError("older_than_months must be non-negative")
+    reference = parse_temporal_date(now) if now else datetime.now(timezone.utc)
+    if reference is None:  # pragma: no cover - guarded by the branch above
+        reference = datetime.now(timezone.utc)
+    cutoff = subtract_calendar_months(reference, older_than_months)
+    notes = list(iter_temporal_notes(root))
+    missing_valid_from = [
+        {
+            "path": note.relative_path,
+            "kind": note.kind,
+            "open_question": "When did this fact become true?",
+        }
+        for note in notes
+        if note.metadata.get("valid_from") in (None, "")
+    ]
+
+    stale_current_facts: list[dict[str, Any]] = []
+    for note in notes:
+        visible, _ = temporal_decision(note.metadata, "current", reference)
+        if not visible:
+            continue
+        dated_sources: list[tuple[Path, datetime, str]] = []
+        for source_path in source_links(root, note):
+            source_metadata, _ = _parse_frontmatter(source_path.read_text(encoding="utf-8", errors="replace"))
+            source_date = source_valid_from(source_metadata)
+            if source_date is None:
+                continue
+            parsed = parse_temporal_date(source_date)
+            if parsed is not None:
+                dated_sources.append((source_path, parsed, source_date))
+        if not dated_sources:
+            continue
+        newest_source = max(dated_sources, key=lambda item: item[1])
+        if newest_source[1] < cutoff:
+            stale_current_facts.append(
+                {
+                    "path": note.relative_path,
+                    "newest_source": newest_source[0].relative_to(root).as_posix(),
+                    "source_date": newest_source[2],
+                    "older_than_months": older_than_months,
+                }
+            )
+
+    broken_chains = supersession_findings(root, notes)
+    return {
+        "ok": True,
+        "read_only": True,
+        "as_of": reference.replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "older_than_months": older_than_months,
+        "missing_valid_from": missing_valid_from,
+        "stale_current_facts": stale_current_facts,
+        "broken_supersession_chains": broken_chains,
+        "counts": {
+            "missing_valid_from": len(missing_valid_from),
+            "stale_current_facts": len(stale_current_facts),
+            "broken_supersession_chains": len(broken_chains),
+        },
+    }
 
 
 def doctor_memory(root: Path) -> dict[str, Any]:

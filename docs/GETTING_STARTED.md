@@ -88,9 +88,17 @@ wiki-memory ingest /path/to/memory \
 ```bash
 wiki-memory index /path/to/memory
 wiki-memory query /path/to/memory "What does the evidence say?"
+wiki-memory query /path/to/memory "What did the memory know?" --system-at 2025-06-01
+wiki-memory query /path/to/memory "What was true?" --valid-at 2025-06-01
 ```
 
-The answer workflow must cite the source note or original path. If QMD is unavailable, Wiki Memory can fall back to text search, but `doctor` will still report QMD as missing.
+The default view uses current facts. `--system-at` reconstructs what the memory knew at a date; `--valid-at` reconstructs what was true in the world at a date. The answer workflow must cite the source note or original path and disclose stale facts it excluded. If QMD is unavailable, Wiki Memory can fall back to text search, but `doctor` will still report QMD as missing.
+
+Review temporal gaps without changing any note:
+
+```bash
+wiki-memory maintenance /path/to/memory --older-than-months 6
+```
 
 ## 7. Configure Syncthing only when enabled
 

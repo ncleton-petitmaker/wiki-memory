@@ -4,6 +4,13 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+### Added
+
+- Optional bi-temporal frontmatter for Wiki facts and syntheses, with preserved supersession history.
+- Current, world-time, and system-time query views with explicit stale-fact reporting.
+- Read-only temporal maintenance and contradiction-resolution proposals.
+- A plain-language onboarding graph explaining sources, verifiability, and fact replacement.
+
 ## [0.0.0] - 2026-09-01
 
 ### Added

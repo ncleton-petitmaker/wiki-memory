@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wiki-note.schema.json",
+  "title": "Wiki Memory Wiki note frontmatter",
+  "$ref": "./temporal-frontmatter.schema.json"
+}

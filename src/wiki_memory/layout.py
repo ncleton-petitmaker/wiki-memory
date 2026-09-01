@@ -116,6 +116,8 @@ Règles :
 5. Demander confirmation si plusieurs vaults conviennent.
 6. Créer un nouveau vault seulement si l'objectif, l'audience, le cycle de vie ou la confidentialité exigent une frontière distincte.
 7. Ne jamais stocker de cookies, jetons, profils navigateur, caches de modèles ou index QMD dans cette racine.
+8. Pour tout nouveau fait, conserver ses deux temps : quand il est vrai et quand la mémoire l'a appris. Ne jamais inventer une date manquante.
+9. Quand un fait change, conserver l'ancien, créer le nouveau et relier les deux avec `supersedes` et `superseded_by`.
 """
     return """# Wiki Memory
 
@@ -130,6 +132,8 @@ Rules:
 5. Ask for confirmation when multiple vaults fit.
 6. Create a vault only when purpose, audience, lifecycle, or confidentiality requires a separate boundary.
 7. Never store cookies, tokens, browser profiles, model caches, or QMD indexes in this root.
+8. For every new fact, preserve both timelines: when it is true and when the memory learned it. Never invent a missing date.
+9. When a fact changes, preserve the old fact, create the new one, and connect them with `supersedes` and `superseded_by`.
 """
 
 
@@ -142,6 +146,17 @@ La mémoire sépare les sources immuables du wiki vivant. Le flux normal est : c
 Les rôles `inbox`, `sources`, `wiki`, `outputs`, `journal`, `meta` et `assets` sont résolus via chaque `vault.yaml`. Les noms de dossiers peuvent donc changer sans casser les outils.
 
 Toute affirmation doit rester traçable vers une source. Les interprétations sont distinguées des faits, et les questions ouvertes restent explicites.
+
+```text
+Source conservée ---> Fait sourcé et daté ---> Synthèse vérifiable
+                           |
+                           +-- vrai quand ?
+                           +-- appris quand ?
+
+Ancien fait conservé ---> Nouveau fait courant
+```
+
+Un fait remplacé n'est pas effacé. Il indique jusqu'à quand il était vrai, quand la mémoire a appris son remplacement et quel nouveau fait lui succède. Si une date manque, elle reste une question ouverte : la mémoire ne la devine pas.
 """
     return """# Wiki architecture
 
@@ -150,6 +165,17 @@ The memory separates immutable sources from a living Wiki. The normal flow is: c
 The `inbox`, `sources`, `wiki`, `outputs`, `journal`, `meta`, and `assets` roles are resolved through each `vault.yaml`, so folder names may change without breaking tools.
 
 Every claim remains traceable to a source. Interpretations are distinguished from facts, and open questions remain explicit.
+
+```text
+Preserved source ---> Sourced, dated fact ---> Verifiable synthesis
+                           |
+                           +-- true when?
+                           +-- learned when?
+
+Preserved old fact ---> Current new fact
+```
+
+A superseded fact is not erased. It records when it stopped being true, when the memory learned about the change, and which fact replaced it. A missing date remains an open question; the memory never guesses it.
 """
 
 

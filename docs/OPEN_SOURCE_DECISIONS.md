@@ -11,6 +11,7 @@ Wiki Memory keeps plain Markdown as the durable source of truth and uses replace
 
 - [Palinode](https://github.com/phasespace-labs/palinode): explicit epistemic states for facts, inferences, open questions, and unverified claims.
 - [Obsidian Brain Vault](https://github.com/markfive-proto/obsidian-brain-vault): capture, ingest, compile, and query workflow.
+- [Graphiti](https://github.com/getzep/graphiti): the bi-temporal principle that separates when a fact is true in the world from when the memory learned or invalidated it. Wiki Memory keeps this principle in readable Markdown rather than adopting Graphiti's graph database implementation.
 
 ## Interoperability
 

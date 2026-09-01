@@ -11,6 +11,7 @@ from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from .config import MemoryError, content_hash, load_vault, platform_runtime_dir, slugify, utc_now
+from .temporal import temporal_defaults_from_source, temporal_open_questions
 
 
 TRACKING_KEYS = {"fbclid", "gclid", "mc_cid", "mc_eid", "ref", "ref_src"}
@@ -237,13 +238,20 @@ def capture_item(
         previous_text = item_path.read_text(encoding="utf-8")
         previous, _ = _parse_frontmatter(previous_text)
         if previous.get("content_hash") == payload_hash:
-            return {"status": "duplicate", "id": item_id, "path": str(item_path)}
+            return {
+                "status": "duplicate",
+                "id": item_id,
+                "path": str(item_path),
+                "fact_temporal_defaults": temporal_defaults_from_source(previous),
+                "open_questions": temporal_open_questions(previous),
+            }
         revision = int(previous.get("revision", 1)) + 1
         stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         revision_path = source_root / "revisions" / item_partition / item_id / f"{stamp}.md"
         revision_path.parent.mkdir(parents=True, exist_ok=True)
         revision_path.write_text(previous_text, encoding="utf-8")
 
+    captured_at = utc_now()
     metadata = {
         "id": item_id,
         "source_type": source_type,
@@ -251,7 +259,7 @@ def capture_item(
         "origin": None if source_url else origin,
         "author": author,
         "published_at": published_at,
-        "captured_at": utc_now(),
+        "captured_at": captured_at,
         "connector": connector,
         "collection": (collection or "").strip() or None,
         "content_hash": payload_hash,
@@ -269,6 +277,8 @@ def capture_item(
         "id": item_id,
         "revision": revision,
         "path": str(item_path),
+        "fact_temporal_defaults": temporal_defaults_from_source(metadata, recorded_at=captured_at),
+        "open_questions": temporal_open_questions(metadata),
     }
 
 

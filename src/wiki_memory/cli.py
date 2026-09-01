@@ -10,7 +10,7 @@ from .capture import capture_item, karakeep_import, social_import
 from .config import MemoryError, ensure_root, load_data
 from .installation import prepare_installation
 from .layout import create_vault, init_memory
-from .quality import doctor_memory, lint_memory, scan_privacy
+from .quality import doctor_memory, lint_memory, maintenance_report, scan_privacy
 from .router import recommend_vault
 from .search import configure_index, query_memory
 from .sync import configure_syncthing
@@ -83,9 +83,24 @@ def build_parser() -> argparse.ArgumentParser:
     query.add_argument("root")
     query.add_argument("question")
     query.add_argument("--limit", type=int, default=10)
+    temporal_axis = query.add_mutually_exclusive_group()
+    temporal_axis.add_argument("--system-at", help="What the memory knew at an ISO 8601 date")
+    temporal_axis.add_argument("--valid-at", help="What was true in the world at an ISO 8601 date")
 
     lint = sub.add_parser("lint", help="Check memory integrity")
     lint.add_argument("root")
+    lint.add_argument(
+        "--contradiction",
+        nargs=2,
+        action="append",
+        default=[],
+        metavar=("FACT_A", "FACT_B"),
+        help="Propose, but never apply, a temporal resolution for two contradictory fact notes",
+    )
+
+    maintenance = sub.add_parser("maintenance", help="List temporal facts that need review")
+    maintenance.add_argument("root")
+    maintenance.add_argument("--older-than-months", type=int, default=6)
 
     doctor = sub.add_parser("doctor", help="Check dependencies, layout, and sync safety")
     doctor.add_argument("root")
@@ -136,9 +151,19 @@ def run(args: argparse.Namespace) -> Any:
     if args.command == "index":
         return configure_index(root, embed=not args.no_embed)
     if args.command == "query":
-        return query_memory(root, args.question, args.limit)
+        return query_memory(
+            root,
+            args.question,
+            args.limit,
+            system_at=args.system_at,
+            valid_at=args.valid_at,
+        )
     if args.command == "lint":
-        return lint_memory(root)
+        return lint_memory(root, [tuple(pair) for pair in args.contradiction])
+    if args.command == "maintenance":
+        if args.older_than_months < 0:
+            raise MemoryError("--older-than-months must be non-negative.")
+        return maintenance_report(root, older_than_months=args.older_than_months)
     if args.command == "doctor":
         return doctor_memory(root)
     if args.command == "syncthing-setup":

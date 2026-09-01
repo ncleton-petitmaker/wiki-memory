@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -11,15 +12,19 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from wiki_memory.capture import canonicalize_url, capture_item, social_import
+from wiki_memory.capture import _frontmatter, _parse_frontmatter, canonicalize_url, capture_item, social_import
 from wiki_memory.config import load_data
 from wiki_memory.dependencies import app_install_command, dependency_report, version_tuple
 from wiki_memory.installation import prepare_installation
 from wiki_memory.layout import create_vault, init_memory
-from wiki_memory.quality import doctor_memory, lint_memory, scan_privacy
+from wiki_memory.quality import doctor_memory, lint_memory, maintenance_report, scan_privacy
 from wiki_memory.router import recommend_vault
 from wiki_memory.search import query_memory
 from wiki_memory.sync import configure_syncthing
+from wiki_memory.temporal import supersession_proposal, temporal_defaults_from_source, temporal_open_questions
+
+
+FIXTURES = ROOT / "tests" / "fixtures" / "temporal"
 
 
 def base_spec() -> dict:
@@ -262,6 +267,123 @@ class WikiMemoryTests(unittest.TestCase):
         report = lint_memory(self.root)
         self.assertFalse(any(item["code"] == "orphan-source" for item in report["warnings"]))
 
+    def test_replaced_fact_is_queryable_on_both_timelines(self) -> None:
+        wiki = self.root / "knowledge" / "02-Wiki"
+        for name in ("old-fact.md", "new-fact.md"):
+            shutil.copy2(FIXTURES / "replaced" / name, wiki / name)
+        sources = self.root / "knowledge" / "01-Sources" / "items"
+        for name, published in (("old-source", "2024-01-15"), ("new-source", "2025-03-01")):
+            (sources / f"{name}.md").write_text(
+                _frontmatter({"published_at": published}) + f"\n\n# {name}\n\nSynthetic source.\n",
+                encoding="utf-8",
+            )
+
+        current = query_memory(self.root, "Alpine Labs service region", 10)
+        current_files = {item.get("file") for item in current["results"]}
+        self.assertIn("knowledge/02-Wiki/new-fact.md", current_files)
+        self.assertNotIn("knowledge/02-Wiki/old-fact.md", current_files)
+        self.assertTrue(any(item["file"].endswith("old-fact.md") for item in current["excluded_stale_facts"]))
+
+        world_then = query_memory(self.root, "Alpine Labs service region", 10, valid_at="2024-06-01")
+        world_files = {item.get("file") for item in world_then["results"]}
+        self.assertIn("knowledge/02-Wiki/old-fact.md", world_files)
+        self.assertNotIn("knowledge/02-Wiki/new-fact.md", world_files)
+
+        system_then = query_memory(self.root, "Alpine Labs service region", 10, system_at="2024-06-01")
+        system_files = {item.get("file") for item in system_then["results"]}
+        self.assertIn("knowledge/02-Wiki/old-fact.md", system_files)
+        self.assertNotIn("knowledge/02-Wiki/new-fact.md", system_files)
+
+        natural = query_memory(
+            self.root,
+            "Que savait la mémoire sur Alpine Labs au 2024-06-01 ?",
+            10,
+        )
+        self.assertEqual(natural["temporal"]["mode"], "system")
+
+        proposal = supersession_proposal(
+            self.root,
+            "knowledge/02-Wiki/old-fact.md",
+            "knowledge/02-Wiki/new-fact.md",
+            observed_at="2025-03-02T10:00:00Z",
+        )
+        self.assertEqual(proposal["status"], "ready")
+        self.assertEqual(proposal["current"], "knowledge/02-Wiki/new-fact.md")
+
+        maintenance = maintenance_report(
+            self.root,
+            older_than_months=6,
+            now="2026-01-01T00:00:00Z",
+        )
+        self.assertTrue(any(item["path"].endswith("new-fact.md") for item in maintenance["stale_current_facts"]))
+        self.assertFalse(maintenance["broken_supersession_chains"])
+
+    def test_source_without_date_creates_a_temporal_open_question(self) -> None:
+        metadata, _ = _parse_frontmatter((FIXTURES / "source-without-date.md").read_text(encoding="utf-8"))
+        defaults = temporal_defaults_from_source(metadata, recorded_at="2025-05-04T12:30:00Z")
+        self.assertIsNone(defaults["valid_from"])
+        self.assertEqual(defaults["recorded_at"], "2025-05-04T12:30:00Z")
+        questions = temporal_open_questions(metadata)
+        self.assertIn("source provides no date", questions[0]["question"])
+
+        captured = capture_item(
+            self.root,
+            "knowledge",
+            source_type="meeting",
+            text="Synthetic dated decision.",
+            published_at="2025-05-03",
+        )
+        self.assertEqual(captured["fact_temporal_defaults"]["valid_from"], "2025-05-03")
+        self.assertFalse(captured["open_questions"])
+
+        fact = self.root / "knowledge" / "02-Wiki" / "undated-fact.md"
+        fact.write_text(
+            _frontmatter(defaults)
+            + "\n\n# Synthetic packaging choice\n",
+            encoding="utf-8",
+        )
+        maintenance = maintenance_report(self.root, older_than_months=6, now="2025-06-01T00:00:00Z")
+        self.assertTrue(any(item["path"].endswith("undated-fact.md") for item in maintenance["missing_valid_from"]))
+
+    def test_ambiguous_temporal_order_is_never_applied(self) -> None:
+        wiki = self.root / "knowledge" / "02-Wiki"
+        for name in ("fact-a.md", "fact-b.md"):
+            shutil.copy2(FIXTURES / "ambiguous" / name, wiki / name)
+        before = {name: (wiki / name).read_text(encoding="utf-8") for name in ("fact-a.md", "fact-b.md")}
+        report = lint_memory(
+            self.root,
+            [("knowledge/02-Wiki/fact-a.md", "knowledge/02-Wiki/fact-b.md")],
+            observed_at="2025-04-03T08:00:00Z",
+        )
+        proposal = report["resolution_proposals"][0]
+        self.assertEqual(proposal["status"], "ambiguous")
+        self.assertEqual(proposal["reason"], "missing-valid-from")
+        self.assertEqual(proposal["updates"], {})
+        after = {name: (wiki / name).read_text(encoding="utf-8") for name in ("fact-a.md", "fact-b.md")}
+        self.assertEqual(before, after)
+
+    def test_maintenance_reports_a_broken_supersession_chain(self) -> None:
+        wiki = self.root / "knowledge" / "02-Wiki"
+        broken = wiki / "broken-chain.md"
+        broken.write_text(
+            _frontmatter(
+                {
+                    "valid_from": "2025-01-01",
+                    "valid_until": None,
+                    "recorded_at": "2025-01-02T00:00:00Z",
+                    "invalidated_at": None,
+                    "supersedes": "[[missing-older-fact]]",
+                    "superseded_by": None,
+                }
+            )
+            + "\n\n# Synthetic broken chain\n",
+            encoding="utf-8",
+        )
+        report = maintenance_report(self.root, older_than_months=6, now="2025-06-01T00:00:00Z")
+        self.assertTrue(
+            any(item["code"] == "broken-supersession-target" for item in report["broken_supersession_chains"])
+        )
+
     def test_privacy_scan_detects_absolute_home(self) -> None:
         safe = scan_privacy(ROOT)
         self.assertTrue(safe["ok"], safe["findings"])
@@ -314,6 +436,9 @@ class WikiMemoryTests(unittest.TestCase):
         self.assertIn("First-launch welcome", skill)
         self.assertIn(welcome, skill)
         self.assertIn("Mandatory dependency gate", skill)
+        self.assertIn("CE QUE VOUS DONNEZ", skill)
+        self.assertIn("01-SOURCES", skill)
+        self.assertIn("when a date or proof is missing", skill)
         self.assertIn("<python-launcher> scripts/bootstrap.py --check", skill)
         self.assertIn("<python-launcher> scripts/bootstrap.py --yes --open-links", skill)
         self.assertIn("--yes --with-syncthing --open-links", skill)
@@ -330,6 +455,8 @@ class WikiMemoryTests(unittest.TestCase):
         self.assertIn(organization_choice, skill)
         self.assertIn("Clearly label assumptions and unknowns", skill)
         self.assertLess(skill.index("First-launch welcome"), skill.index("Mandatory dependency gate"))
+        self.assertLess(skill.index("Mandatory dependency gate"), skill.index("Explain the memory in plain language"))
+        self.assertLess(skill.index("Explain the memory in plain language"), skill.index("Choose the starting point"))
         self.assertLess(skill.index("Mandatory dependency gate"), skill.index("Choose the starting point"))
         self.assertLess(skill.index("Choose the starting point"), skill.index("Interview progressively"))
         self.assertLess(skill.index("Mandatory dependency gate"), skill.index("Interview progressively"))
@@ -367,6 +494,12 @@ class WikiMemoryTests(unittest.TestCase):
         self.assertIn("Veux-tu démarrer un échange", agent_instructions)
         for schema in (ROOT / "schemas").glob("*.json"):
             self.assertIsInstance(json.loads(schema.read_text(encoding="utf-8")), dict)
+        temporal = json.loads((ROOT / "schemas" / "temporal-frontmatter.schema.json").read_text(encoding="utf-8"))
+        self.assertNotIn("required", temporal)
+        self.assertTrue(
+            {"valid_from", "valid_until", "recorded_at", "invalidated_at", "supersedes", "superseded_by"}
+            <= set(temporal["properties"])
+        )
 
 
 if __name__ == "__main__":

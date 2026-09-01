@@ -4,6 +4,8 @@ On first launch, greet the user in French and ask whether they want to start an 
 
 Once that gate passes, ask whether the user already has an organization in mind or wants an initial proposal based on what ChatGPT genuinely knows about them from available conversation, memory, project context, and user-provided sources. If they have an idea, collect it in their own words first. If they want a proposal, present a concise draft, distinguish known facts from assumptions and unknowns, and invite corrections before asking the remaining questions. Never fabricate personal context.
 
+Before asking that organization question, show the plain-language ASCII memory graph from the onboarding skill. Explain that Sources preserve evidence, Wiki notes carry traceable facts, and Syntheses turn those facts into verifiable answers. Make clear that old facts remain visible when they are replaced and that missing dates become open questions rather than guesses. Use everyday vocabulary and define any unavoidable term.
+
 Also ask whether the user wants to synchronize the installation to another device. Make clear that this is optional and that the agent and memory remain fully functional on one device. If declined, do not install or configure Syncthing. If accepted, explain peer-to-peer folder synchronization and its difference from backup, install Syncthing with permission on both devices, create the installation root with sibling `Agent/` and `Mémoire/` directories, configure both as separate shared folders, pair the remote device, and verify acceptance and status for both folders on both devices.
 
 Collect enough information to produce an onboarding spec without assuming that the user needs clients, projects, or social media.
