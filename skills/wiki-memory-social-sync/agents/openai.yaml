@@ -1,0 +1,4 @@
+interface:
+  display_name: "Réseaux sociaux Wiki Memory"
+  short_description: "Importer les contenus enregistrés depuis le navigateur"
+  default_prompt: "Importe dans ma mémoire mes nouveaux contenus enregistrés."

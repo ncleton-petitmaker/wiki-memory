@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "wiki-memory-agent"
+version = "0.0.0"
+description = "Local-first Markdown memory engine for the Wiki Memory Codex plugin"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+keywords = ["codex", "obsidian", "syncthing", "markdown", "knowledge-management"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: MacOS",
+  "Operating System :: Microsoft :: Windows",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Text Processing :: Markup :: Markdown",
+]
+dependencies = ["PyYAML>=6.0,<7"]
+
+[project.urls]
+Homepage = "https://github.com/ncleton-petitmaker/wiki-memory"
+Documentation = "https://github.com/ncleton-petitmaker/wiki-memory/tree/main/docs"
+Issues = "https://github.com/ncleton-petitmaker/wiki-memory/issues"
+Changelog = "https://github.com/ncleton-petitmaker/wiki-memory/blob/main/CHANGELOG.md"
+
+[project.scripts]
+wiki-memory = "wiki_memory.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

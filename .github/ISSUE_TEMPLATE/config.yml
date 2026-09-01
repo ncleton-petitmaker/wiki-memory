@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/ncleton-petitmaker/wiki-memory/discussions
+    about: Ask for help or explore an early idea in Discussions.
+  - name: Private security report
+    url: https://github.com/ncleton-petitmaker/wiki-memory/security/advisories/new
+    about: Report vulnerabilities or privacy leaks privately.

@@ -1,0 +1,59 @@
+name: Feature request
+description: Propose a focused improvement to Wiki Memory.
+title: "[Feature]: "
+labels: ["type: enhancement", "needs triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Broad ideas are often easier to shape in Discussions first. Please describe the user need before the implementation.
+  - type: textarea
+    id: problem
+    attributes:
+      label: User problem
+      description: What is difficult or impossible today, and for whom?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Describe observable behavior rather than a specific internal implementation.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Primary area
+      options:
+        - Onboarding or installation
+        - Vault routing
+        - Capture or ingestion
+        - Search or QMD
+        - Social sync
+        - Obsidian or Syncthing
+        - Quality or diagnostics
+        - Developer experience
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: What workarounds or related tools did you evaluate?
+  - type: textarea
+    id: compatibility
+    attributes:
+      label: Compatibility and privacy impact
+      description: Note changes to Markdown, vault layout, Syncthing, local-first behavior, or data boundaries.
+  - type: checkboxes
+    id: principles
+    attributes:
+      label: Project principles
+      options:
+        - label: The proposal keeps Markdown and original files as the durable source of truth.
+          required: true
+        - label: The example contains no real personal or client data.
+          required: true

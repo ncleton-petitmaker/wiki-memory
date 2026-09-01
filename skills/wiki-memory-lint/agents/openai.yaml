@@ -1,0 +1,4 @@
+interface:
+  display_name: "Contrôle Wiki Memory"
+  short_description: "Détecter les liens cassés et les incohérences"
+  default_prompt: "Contrôle la cohérence de ma mémoire."

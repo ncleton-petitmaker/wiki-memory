@@ -1,0 +1,4 @@
+interface:
+  display_name: "Recherche Wiki Memory"
+  short_description: "Rechercher localement et répondre avec les sources"
+  default_prompt: "Réponds à ma question à partir de ma mémoire et cite les sources."

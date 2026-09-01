@@ -1,0 +1,1 @@
+Process every pending item in the configured Wiki Memory inboxes. Route ambiguous items only after asking the user, preserve originals, ingest supported documents with Docling, refresh the QMD index, run the memory linter, and report only changes or failures.

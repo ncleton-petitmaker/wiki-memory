@@ -1,0 +1,28 @@
+{
+  "name": "Ma mémoire",
+  "language": "fr",
+  "client_isolation": false,
+  "sync_enabled": false,
+  "versioning_confirmed": false,
+  "connectors": {
+    "instagram": {"enabled": true},
+    "linkedin": {"enabled": true},
+    "reddit": {"enabled": true},
+    "x": {"enabled": false},
+    "youtube": {"enabled": true, "playlists": []}
+  },
+  "schedules": {"ingest": "daily", "social_sync": "daily"},
+  "vaults": [
+    {
+      "slug": "connaissances",
+      "title": "Connaissances",
+      "purpose": "Conserver et relier les apprentissages utiles",
+      "audience": ["owner"],
+      "confidentiality": "private",
+      "lifecycle": "ongoing",
+      "routing": {"include": ["article", "livre", "cours"], "exclude": [], "keywords": []},
+      "taxonomy": {"categories": [], "tags": []},
+      "deliverables": ["synthèses"]
+    }
+  ]
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Intégration Wiki Memory"
+  short_description: "Convertir, classer, relier et synthétiser des sources"
+  default_prompt: "Intègre ces sources à ma mémoire."

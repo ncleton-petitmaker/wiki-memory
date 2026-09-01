@@ -1,0 +1,21 @@
+{
+  "name": "petitmaker",
+  "interface": {
+    "displayName": "Petitmaker"
+  },
+  "plugins": [
+    {
+      "name": "wiki-memory",
+      "source": {
+        "source": "url",
+        "url": "https://github.com/ncleton-petitmaker/wiki-memory.git",
+        "ref": "main"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}

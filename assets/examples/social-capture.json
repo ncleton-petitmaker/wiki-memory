@@ -1,0 +1,14 @@
+{
+  "items": [
+    {
+      "connector": "reddit",
+      "source_url": "https://www.reddit.com/r/example/comments/example/synthetic_post/",
+      "collection": "A etudier",
+      "title": "Synthetic saved post",
+      "author": "example-author",
+      "published_at": "2026-01-01T12:00:00Z",
+      "text": "Synthetic fixture content used only for testing.",
+      "media": []
+    }
+  ]
+}

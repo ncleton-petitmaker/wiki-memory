@@ -1,0 +1,4 @@
+interface:
+  display_name: "Classement Wiki Memory"
+  short_description: "Choisir le bon vault ou proposer une nouvelle frontière"
+  default_prompt: "Détermine où classer cet élément dans ma mémoire."

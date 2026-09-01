@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "social-capture.schema.json",
+  "title": "Normalized browser social capture",
+  "type": "object",
+  "required": ["items"],
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["connector", "source_url"],
+        "properties": {
+          "connector": {"enum": ["instagram", "linkedin", "reddit", "x", "youtube"]},
+          "source_url": {"type": "string", "format": "uri"},
+          "title": {"type": ["string", "null"]},
+          "author": {"type": ["string", "null"]},
+          "published_at": {"type": ["string", "null"]},
+          "collection": {"type": ["string", "null"]},
+          "collection_url": {"type": ["string", "null"], "format": "uri"},
+          "text": {"type": "string"},
+          "transcript": {"type": "string"},
+          "media": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Capture Wiki Memory"
+  short_description: "Conserver une source, son origine et ses versions"
+  default_prompt: "Ajoute cette source à ma mémoire en conservant son origine."

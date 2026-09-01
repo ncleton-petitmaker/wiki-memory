@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "vault.schema.json",
+  "title": "Wiki Memory vault specification",
+  "type": "object",
+  "required": ["title", "purpose"],
+  "properties": {
+    "slug": {"type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"},
+    "title": {"type": "string", "minLength": 1},
+    "language": {"type": "string"},
+    "purpose": {"type": "string", "minLength": 1},
+    "audience": {"type": "array", "items": {"type": "string"}},
+    "confidentiality": {"type": "string"},
+    "lifecycle": {"type": "string"},
+    "routing": {
+      "type": "object",
+      "properties": {
+        "include": {"type": "array", "items": {"type": "string"}},
+        "exclude": {"type": "array", "items": {"type": "string"}},
+        "keywords": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "taxonomy": {"type": "object"},
+    "deliverables": {"type": "array", "items": {"type": "string"}},
+    "folders": {"type": "object", "additionalProperties": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

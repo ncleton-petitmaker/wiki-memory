@@ -1,0 +1,4 @@
+interface:
+  display_name: "Diagnostic Wiki Memory"
+  short_description: "Vérifier l'installation, les vaults et la synchronisation"
+  default_prompt: "Vérifie le bon fonctionnement de ma mémoire."

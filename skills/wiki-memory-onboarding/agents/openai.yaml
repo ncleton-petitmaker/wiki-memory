@@ -1,0 +1,4 @@
+interface:
+  display_name: "Accueil Wiki Memory"
+  short_description: "Démarrer et structurer une mémoire adaptable"
+  default_prompt: "Commençons."

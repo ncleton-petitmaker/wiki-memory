@@ -1,0 +1,34 @@
+{
+  "name": "wiki-memory",
+  "version": "0.0.0",
+  "description": "Construire et entretenir une mémoire Markdown locale, structurée et reliée à ses sources.",
+  "author": {
+    "name": "Petitmaker",
+    "url": "https://github.com/ncleton-petitmaker"
+  },
+  "homepage": "https://github.com/ncleton-petitmaker/wiki-memory#readme",
+  "repository": "https://github.com/ncleton-petitmaker/wiki-memory",
+  "license": "MIT",
+  "keywords": ["memory", "knowledge-base", "obsidian", "syncthing", "markdown"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Wiki Memory",
+    "shortDescription": "Une mémoire Markdown locale, adaptable et sourcée.",
+    "longDescription": "Structurez, alimentez, interrogez et synchronisez une mémoire durable dans des vaults Obsidian indépendants.",
+    "developerName": "Petitmaker",
+    "category": "Productivity",
+    "capabilities": ["Interactive", "Write", "Browser"],
+    "websiteURL": "https://github.com/ncleton-petitmaker/wiki-memory",
+    "privacyPolicyURL": "https://github.com/ncleton-petitmaker/wiki-memory/blob/main/SECURITY.md",
+    "termsOfServiceURL": "https://github.com/ncleton-petitmaker/wiki-memory/blob/main/LICENSE",
+    "brandColor": "#7CF7C2",
+    "composerIcon": "./assets/wiki-memory-icon.png",
+    "logo": "./assets/wiki-memory-icon.png",
+    "screenshots": ["./assets/wiki-memory-social-preview.png"],
+    "defaultPrompt": [
+      "Commençons.",
+      "Ajoute cette source à ma mémoire.",
+      "Cherche dans ma mémoire et cite les sources."
+    ]
+  }
+}
