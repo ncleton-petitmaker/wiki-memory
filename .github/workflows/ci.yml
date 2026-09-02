@@ -34,8 +34,12 @@ jobs:
       - run: python scripts/deployment_validate.py
       - run: python scripts/privacy_scan.py .
       # The project itself is editable in CI and is audited separately through
-      # its signed release artifact; audit every resolved third-party package.
-      - run: python -m pip_audit --skip-editable
+      # its signed release artifact.  Freeze only installed project
+      # dependencies: auditing the runner's bootstrap `pip` would make a
+      # project release depend on an unrelated, platform-image package.
+      - run: |
+          python -m pip freeze > wiki-memory-audit-requirements.txt
+          python -m pip_audit --skip-editable -r wiki-memory-audit-requirements.txt
 
   dependency-smoke:
     runs-on: ubuntu-latest
