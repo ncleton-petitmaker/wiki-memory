@@ -137,6 +137,7 @@ jobs:
     needs: [artifacts, image]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with: {name: release-artifacts, path: dist}
       - uses: softprops/action-gh-release@v2

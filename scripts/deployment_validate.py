@@ -71,8 +71,9 @@ def main() -> int:
     require("internal: true" in internal_ci_values, "Helm internal CI fixture must exercise bundled storage", errors)
     require(
         "draft: true" in release_workflow
+        and "actions/checkout@v7\n      - uses: actions/download-artifact@v8" in release_workflow
         and 'gh release edit "$GITHUB_REF_NAME" --draft=false' in release_workflow,
-        "Release workflow must attach assets to a draft before immutable publication",
+        "Release workflow must attach assets to a checked-out draft before immutable publication",
         errors,
     )
 

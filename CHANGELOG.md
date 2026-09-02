@@ -4,6 +4,11 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.6] - 2026-09-02
+
+- Give the immutable-release publication transition a checkout, so `gh release
+  edit` can resolve the tagged release after assets are attached to its draft.
+
 ## [1.0.0-alpha.5] - 2026-09-02
 
 - Publish immutable GitHub releases correctly: assets and signatures are
@@ -90,7 +95,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.5...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.6...HEAD
+[1.0.0-alpha.6]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.6
 [1.0.0-alpha.5]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.5
 [1.0.0-alpha.4]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.4
 [1.0.0-alpha.3]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.3
