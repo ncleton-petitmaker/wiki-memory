@@ -132,6 +132,19 @@ class LocalApiTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 400)
 
+    def test_local_api_rejects_malformed_request_shapes_without_500(self) -> None:
+        cases = (
+            ("/v1/captures", {"text": "missing vault"}),
+            ("/v1/events:append", {"events": "not-an-array"}),
+            ("/v1/search", {"query": ["not", "a", "string"]}),
+            ("/v1/proposals", {"assertion": ["not", "an", "object"]}),
+            ("/v1/proposals/missing/review", {"decision": ["not", "a", "string"]}),
+        )
+        for path, payload in cases:
+            with self.subTest(path=path):
+                response = self.client.post(path, headers=self.headers, json=payload)
+                self.assertEqual(response.status_code, 422, response.text)
+
     def test_local_api_refuses_to_serve_corrupt_evidence(self) -> None:
         captured = self.client.post(
             "/v1/captures",

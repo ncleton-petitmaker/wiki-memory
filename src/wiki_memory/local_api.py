@@ -104,6 +104,38 @@ def create_local_app(root: Path, token: str | None = None):
             raise HTTPException(status_code=422, detail="JSON request must be an object")
         return value
 
+    def required_string(value: dict[str, Any], field: str) -> str:
+        raw = value.get(field)
+        if not isinstance(raw, str) or not raw.strip():
+            raise HTTPException(status_code=422, detail=f"{field} must be a non-empty string")
+        return raw
+
+    def optional_string(value: dict[str, Any], field: str) -> str | None:
+        raw = value.get(field)
+        if raw is None:
+            return None
+        if not isinstance(raw, str):
+            raise HTTPException(status_code=422, detail=f"{field} must be a string")
+        return raw
+
+    def bounded_integer(value: dict[str, Any], field: str, *, default: int, minimum: int, maximum: int) -> int:
+        raw = value.get(field, default)
+        if isinstance(raw, bool):
+            raise HTTPException(status_code=422, detail=f"{field} must be an integer")
+        try:
+            parsed = int(raw)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=f"{field} must be an integer") from exc
+        if not minimum <= parsed <= maximum:
+            raise HTTPException(status_code=422, detail=f"{field} must be between {minimum} and {maximum}")
+        return parsed
+
+    def string_array(value: dict[str, Any], field: str) -> list[str]:
+        raw = value.get(field, [])
+        if not isinstance(raw, list) or not all(isinstance(item, str) for item in raw):
+            raise HTTPException(status_code=422, detail=f"{field} must be an array of strings")
+        return raw
+
     @app.exception_handler(MemoryError)
     async def memory_error_handler(_: Request, exc: MemoryError):
         return JSONResponse(status_code=400, content={"ok": False, "error": str(exc)})
@@ -116,27 +148,39 @@ def create_local_app(root: Path, token: str | None = None):
     @app.post("/v1/captures")
     async def captures(request: Request, _: None = Depends(authorize)) -> dict[str, Any]:
         value = await json_body(request)
-        if value.get("scope", "private") != "private":
+        scope = value.get("scope", "private")
+        if scope != "private":
             raise HTTPException(status_code=422, detail="Capture is private; use the previewed publication workflow to share")
+        vault = required_string(value, "vault")
+        source_file = optional_string(value, "file")
+        text = optional_string(value, "text")
+        title = optional_string(value, "title")
+        source_url = optional_string(value, "url")
+        source_type = optional_string(value, "sourceType") or "document"
+        connector = optional_string(value, "connector") or "manual"
+        actor_id = optional_string(value, "actorId") or "local-owner"
         return capture_item(
             root,
-            value["vault"],
-            source_type=str(value.get("sourceType") or "document"),
-            source_url=value.get("url"),
-            source_file=Path(value["file"]) if value.get("file") else None,
-            text=value.get("text"),
-            title=value.get("title"),
-            connector=str(value.get("connector") or "manual"),
+            vault,
+            source_type=source_type,
+            source_url=source_url,
+            source_file=Path(source_file) if source_file else None,
+            text=text,
+            title=title,
+            connector=connector,
             scope="private",
             space_id="local-owner",
-            actor_id=str(value.get("actorId") or "local-owner"),
+            actor_id=actor_id,
         )
 
     @app.post("/v1/events:append")
     async def append_events(request: Request, _: None = Depends(authorize)) -> dict[str, Any]:
         value = await json_body(request)
+        raw_events = value.get("events")
+        if not isinstance(raw_events, list) or not raw_events:
+            raise HTTPException(status_code=422, detail="events must be a non-empty array")
         events = []
-        for raw in value.get("events", []):
+        for raw in raw_events:
             # Reject Team-only decisions before deserializing their full
             # payload. This keeps the trust boundary explicit even if an
             # attacker submits an otherwise malformed event.
@@ -172,7 +216,15 @@ def create_local_app(root: Path, token: str | None = None):
             expected = raw.get("expectedStreamVersion")
             if expected is None:
                 expected = event.stream_version - 1 if event.stream_version > 0 else 0
-            persisted, created = engine.append(event, expected_stream_version=int(expected))
+            if isinstance(expected, bool):
+                raise HTTPException(status_code=422, detail="expectedStreamVersion must be a non-negative integer")
+            try:
+                expected_version = int(expected)
+            except (TypeError, ValueError) as exc:
+                raise HTTPException(status_code=422, detail="expectedStreamVersion must be a non-negative integer") from exc
+            if expected_version < 0:
+                raise HTTPException(status_code=422, detail="expectedStreamVersion must be a non-negative integer")
+            persisted, created = engine.append(event, expected_stream_version=expected_version)
             events.append({"event": persisted.to_dict(), "created": created})
         return {"events": events}
 
@@ -225,21 +277,28 @@ def create_local_app(root: Path, token: str | None = None):
     @app.post("/v1/search")
     async def search(request: Request, _: None = Depends(authorize)) -> dict[str, Any]:
         value = await json_body(request)
-        return query_memory(root, str(value["query"]), int(value.get("limit", 10)))
+        return query_memory(
+            root,
+            required_string(value, "query"),
+            bounded_integer(value, "limit", default=10, minimum=1, maximum=1000),
+        )
 
     @app.post("/v1/proposals")
     async def proposals(request: Request, _: None = Depends(authorize)) -> dict[str, Any]:
         value = await json_body(request)
-        assertion = dict(value["assertion"])
+        raw_assertion = value.get("assertion")
+        if not isinstance(raw_assertion, dict):
+            raise HTTPException(status_code=422, detail="assertion must be an object")
+        assertion = dict(raw_assertion)
         if value.get("vault"):
-            assertion["vault"] = str(value["vault"])
+            assertion["vault"] = required_string(value, "vault")
         return propose_assertion(
             engine,
-            actor_id=str(value.get("actorId") or "local-owner"),
-            scope=str(value.get("scope") or "private"),
-            space_id=str(value.get("spaceId") or "local-owner"),
+            actor_id=optional_string(value, "actorId") or "local-owner",
+            scope=optional_string(value, "scope") or "private",
+            space_id=optional_string(value, "spaceId") or "local-owner",
             assertion=assertion,
-            evidence_refs=[str(item) for item in value.get("evidenceRefs", [])],
+            evidence_refs=string_array(value, "evidenceRefs"),
         )
 
     @app.post("/v1/proposals/{proposal_id}/review")
@@ -247,10 +306,10 @@ def create_local_app(root: Path, token: str | None = None):
         value = await json_body(request)
         return review_local_proposal(
             engine,
-            actor_id=str(value.get("actorId") or "local-owner"),
+            actor_id=optional_string(value, "actorId") or "local-owner",
             proposal_event_id=proposal_id,
-            decision=str(value["decision"]),
-            reason=value.get("reason"),
+            decision=required_string(value, "decision"),
+            reason=optional_string(value, "reason"),
         )
 
     return app
