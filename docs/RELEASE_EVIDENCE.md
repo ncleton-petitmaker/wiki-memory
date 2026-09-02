@@ -9,7 +9,7 @@ review remains open until that party supplies evidence.
 
 | Requirement | Executable evidence | Evidence status for alpha.6 |
 | --- | --- | --- |
-| Durable solo capture and QMD retrieval at 100,000 documents | `scripts/load_benchmark.py --documents 100000 --qmd --assert-targets --report …` | Harness present; no immutable full-scale report is attached to alpha.6, so no measured latency is claimed. |
+| Durable solo capture and QMD retrieval at 100,000 documents | `scripts/load_benchmark.py --documents 100000 --qmd --assert-targets --report …` | Passed on 2026-09-02 with QMD 2.8.3: capture p95 16.926 ms and search p95 293.296 ms. The exact report is [`local-100k-qmd-2026-09-02.json`](evidence/local-100k-qmd-2026-09-02.json), SHA-256 `517e691e0b5c7b2e99a47bbeb17531ed362027d50edb8e3f3051049dbb09833e`. |
 | Team retrieval at one million fragments | `scripts/team_load_benchmark.py --fragments 1000000 --assert-target --report …` | Harness present; no immutable full-scale report is attached to alpha.6, so no measured latency is claimed. |
 | 100 active source streams and 500 authorized members | `scripts/team_load_benchmark.py --workers 100 --members 500 --assert-operational-scale --report …` | Harness present; no immutable capacity report is attached to alpha.6. |
 | Team WAL recovery protocol | `scripts/team_pitr_rehearsal.py` | Exercised by the release validation workflow against synthetic PostgreSQL and verified recovered evidence. |
@@ -29,10 +29,9 @@ refuse to claim a full-scale target from a smaller corpus.
 - `proven by alpha.6 CI`: canonical append-only ledger, content-addressed
   evidence, projections/rebuild, plugin contracts, isolated Team paths,
   ACL-before-search, crash recovery, and a synthetic WAL-recovery rehearsal.
-- `not yet evidenced for alpha.6`: the 100,000-document local target, the
-  one-million-fragment Team target, and the 100-connector/500-member capacity
-  target. The harnesses exist, but a target is not a result until its JSON
-  report is retained and reviewable.
+- `not yet evidenced`: the one-million-fragment Team target and the
+  100-connector/500-member capacity target. The harnesses exist, but a target
+  is not a result until its JSON report is retained and reviewable.
 - `must be evidenced per deployment`: managed PostgreSQL PITR retention,
   versioned S3/MinIO recovery point, restore rehearsal against that exact pair,
   alert delivery for restore age, and enforcement of the declared egress
