@@ -440,6 +440,17 @@ class TeamPostgresTests(unittest.TestCase):
         self.assertNotIn("sessionStorage", script.text)
 
         self.assertEqual(client.get("/metrics", headers=outsider).status_code, 403)
+        malformed_proposal = client.post(
+            "/v1/proposals",
+            headers=member,
+            json={
+                "spaceId": space,
+                "evidenceRefs": ["not-a-sha256-reference"],
+                "assertion": {"body": "must not reach ACL or object storage"},
+            },
+        )
+        self.assertEqual(malformed_proposal.status_code, 422, malformed_proposal.text)
+        self.assertEqual(malformed_proposal.json()["detail"], "evidenceRefs must contain SHA-256 references")
         oversized_batch = client.post(
             "/v1/events:append",
             headers=member,

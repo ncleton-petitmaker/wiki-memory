@@ -233,6 +233,27 @@ def create_app(
             raise HTTPException(status_code=422, detail="JSON request must be an object")
         return value
 
+    def validated_evidence_references(value: Any) -> list[str]:
+        """Validate untrusted proposal references before ACL or object-store work.
+
+        Event uploads construct ``MemoryEvent`` first, which already validates
+        references. Proposal creation accepts its own compact payload, so it
+        needs the same boundary check here. In particular, never split an
+        untrusted string to obtain an object key: malformed input must be a
+        normal 422 response rather than an internal error.
+        """
+
+        if not isinstance(value, list) or not all(isinstance(reference, str) for reference in value):
+            raise HTTPException(status_code=422, detail="evidenceRefs must be an array of SHA-256 references")
+        if len(set(value)) != len(value):
+            raise HTTPException(status_code=422, detail="evidenceRefs cannot contain duplicates")
+        try:
+            for reference in value:
+                parse_reference(reference)
+        except MemoryError as exc:
+            raise HTTPException(status_code=422, detail="evidenceRefs must contain SHA-256 references") from exc
+        return value
+
     def validate_projection_target(event: MemoryEvent) -> None:
         def validate_relative(field: str) -> None:
             value = str(event.payload.get(field) or "")
@@ -962,8 +983,8 @@ def create_app(
         space_id = str(payload.get("spaceId") or "")
         if not can_contribute(user, space_id):
             raise HTTPException(status_code=403, detail="Cannot contribute to this space")
-        evidence_refs = [str(item) for item in payload.get("evidenceRefs", [])]
-        missing = [ref for ref in evidence_refs if not object_store.verify(ref.split(":", 1)[1])]
+        evidence_refs = validated_evidence_references(payload.get("evidenceRefs", []))
+        missing = [ref for ref in evidence_refs if not object_store.verify(parse_reference(ref))]
         if missing:
             raise HTTPException(status_code=409, detail={"missingEvidence": missing})
         assertion = dict(payload.get("assertion") or {})

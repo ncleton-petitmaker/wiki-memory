@@ -4,6 +4,12 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.16] - 2026-09-02
+
+### Fixed
+
+- Reject malformed or duplicate Team proposal evidence references at the API boundary before any ACL or object-store operation; valid client mistakes now receive a precise `422` instead of risking an internal error.
+
 ## [1.0.0-alpha.15] - 2026-09-02
 
 ### Security
@@ -155,7 +161,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.15...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.16...HEAD
+[1.0.0-alpha.16]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.16
 [1.0.0-alpha.15]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.15
 [1.0.0-alpha.14]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.14
 [1.0.0-alpha.13]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.13
