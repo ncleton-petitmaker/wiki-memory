@@ -26,6 +26,7 @@ def main() -> int:
     network_policy = (ROOT / "deploy/helm/wiki-memory/templates/networkpolicy.yaml").read_text(encoding="utf-8")
     ci_values = (ROOT / "deploy/helm/wiki-memory/values.ci.yaml").read_text(encoding="utf-8")
     internal_ci_values = (ROOT / "deploy/helm/wiki-memory/values.internal-ci.yaml").read_text(encoding="utf-8")
+    release_workflow = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
 
     require("127.0.0.1:8787:8787" in compose, "Compose API must bind only to loopback", errors)
     require("read_only: true" in compose and "no-new-privileges:true" in compose, "Compose must harden API/worker", errors)
@@ -68,6 +69,12 @@ def main() -> int:
     require("minio-init" in storage and "minio-init" in network_policy, "MinIO initialization must retain its narrow storage access", errors)
     require("networkPolicy:" in ci_values and "apiIngress:" in ci_values, "Helm CI fixture must exercise the fail-closed policy", errors)
     require("internal: true" in internal_ci_values, "Helm internal CI fixture must exercise bundled storage", errors)
+    require(
+        "draft: true" in release_workflow
+        and 'gh release edit "$GITHUB_REF_NAME" --draft=false' in release_workflow,
+        "Release workflow must attach assets to a draft before immutable publication",
+        errors,
+    )
 
     if errors:
         print("deployment-validation-failed", file=sys.stderr)

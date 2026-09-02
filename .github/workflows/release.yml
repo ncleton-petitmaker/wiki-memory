@@ -143,6 +143,14 @@ jobs:
         with:
           files: "dist/*"
           generate_release_notes: true
-          # GitHub does not infer prerelease state from a SemVer suffix. Keep
-          # alpha/beta/rc tags visibly non-stable in the release UI.
+          # Immutable GitHub releases accept assets only while they are drafts.
+          # Upload every file first; the explicit `gh release edit` below is
+          # the single publish transition.
+          draft: true
           prerelease: ${{ contains(github.ref_name, '-') }}
+      - name: Publish immutable release after assets are attached
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          gh release edit "$GITHUB_REF_NAME" --draft=false
+          ${{ contains(github.ref_name, '-') && '--prerelease' || '--latest' }}

@@ -7,11 +7,11 @@ review remains open until that party supplies evidence.
 
 ## Reproducible, synthetic gates
 
-| Requirement | Executable evidence | Evidence status for alpha.3 |
+| Requirement | Executable evidence | Evidence status for alpha.5 |
 | --- | --- | --- |
-| Durable solo capture and QMD retrieval at 100,000 documents | `scripts/load_benchmark.py --documents 100000 --qmd --assert-targets --report …` | Harness present; no immutable full-scale report is attached to alpha.3, so no measured latency is claimed. |
-| Team retrieval at one million fragments | `scripts/team_load_benchmark.py --fragments 1000000 --assert-target --report …` | Harness present; no immutable full-scale report is attached to alpha.3, so no measured latency is claimed. |
-| 100 active source streams and 500 authorized members | `scripts/team_load_benchmark.py --workers 100 --members 500 --assert-operational-scale --report …` | Harness present; no immutable capacity report is attached to alpha.3. |
+| Durable solo capture and QMD retrieval at 100,000 documents | `scripts/load_benchmark.py --documents 100000 --qmd --assert-targets --report …` | Harness present; no immutable full-scale report is attached to alpha.5, so no measured latency is claimed. |
+| Team retrieval at one million fragments | `scripts/team_load_benchmark.py --fragments 1000000 --assert-target --report …` | Harness present; no immutable full-scale report is attached to alpha.5, so no measured latency is claimed. |
+| 100 active source streams and 500 authorized members | `scripts/team_load_benchmark.py --workers 100 --members 500 --assert-operational-scale --report …` | Harness present; no immutable capacity report is attached to alpha.5. |
 | Team WAL recovery protocol | `scripts/team_pitr_rehearsal.py` | Exercised by the release validation workflow against synthetic PostgreSQL and verified recovered evidence. |
 | Solo crash boundary | `scripts/crash_campaign.py` | Exercised by the release validation workflow; acknowledged writes are verified after recovery. |
 | Canonical Team ledger and object verification | `scripts/team_restore_verify.py` | Exercised by the synthetic WAL recovery rehearsal. |
@@ -26,10 +26,10 @@ refuse to claim a full-scale target from a smaller corpus.
 
 ## Current gate status
 
-- `proven by alpha.3 CI`: canonical append-only ledger, content-addressed
+- `proven by alpha.5 CI`: canonical append-only ledger, content-addressed
   evidence, projections/rebuild, plugin contracts, isolated Team paths,
   ACL-before-search, crash recovery, and a synthetic WAL-recovery rehearsal.
-- `not yet evidenced for alpha.3`: the 100,000-document local target, the
+- `not yet evidenced for alpha.5`: the 100,000-document local target, the
   one-million-fragment Team target, and the 100-connector/500-member capacity
   target. The harnesses exist, but a target is not a result until its JSON
   report is retained and reviewable.
@@ -47,7 +47,7 @@ and [TEAM_SELF_HOSTING.md](TEAM_SELF_HOSTING.md) for the operator procedures.
 
 ## Stable-tag control
 
-The release workflow treats a semantic pre-release such as `v1.0.0-alpha.4`
+The release workflow treats a semantic pre-release such as `v1.0.0-alpha.5`
 as an alpha. A stable tag such as `v1.0.0` first enters the GitHub
 `stable-release` environment. Configure that environment with required
 reviewers and its three variables, each pointing to a reviewable HTTPS record:

@@ -4,6 +4,13 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.5] - 2026-09-02
+
+- Publish immutable GitHub releases correctly: assets and signatures are
+  attached to a draft before the single explicit publication transition.
+- Test that release workflow invariant so a prerelease cannot be published
+  empty on an immutable-release repository.
+
 ## [1.0.0-alpha.4] - 2026-09-02
 
 - Stop publishing untraceable benchmark numbers as release evidence.
@@ -83,7 +90,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.4...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.5...HEAD
+[1.0.0-alpha.5]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.5
 [1.0.0-alpha.4]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.4
 [1.0.0-alpha.3]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.3
 [1.0.0-alpha.2]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.2
