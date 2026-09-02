@@ -233,6 +233,40 @@ def create_app(
             raise HTTPException(status_code=422, detail="JSON request must be an object")
         return value
 
+    def required_string(value: dict[str, Any], field: str) -> str:
+        raw = value.get(field)
+        if not isinstance(raw, str) or not raw.strip():
+            raise HTTPException(status_code=422, detail=f"{field} must be a non-empty string")
+        return raw
+
+    def optional_string(value: dict[str, Any], field: str) -> str | None:
+        raw = value.get(field)
+        if raw is None:
+            return None
+        if not isinstance(raw, str):
+            raise HTTPException(status_code=422, detail=f"{field} must be a string")
+        return raw
+
+    def object_value(value: dict[str, Any], field: str, *, default: dict[str, Any] | None = None) -> dict[str, Any]:
+        raw = value.get(field, default if default is not None else {})
+        if raw is None:
+            raw = default if default is not None else {}
+        if not isinstance(raw, dict):
+            raise HTTPException(status_code=422, detail=f"{field} must be an object")
+        return dict(raw)
+
+    def bounded_integer(value: dict[str, Any], field: str, *, default: int, minimum: int, maximum: int) -> int:
+        raw = value.get(field, default)
+        if isinstance(raw, bool):
+            raise HTTPException(status_code=422, detail=f"{field} must be an integer")
+        try:
+            parsed = int(raw)
+        except (TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=f"{field} must be an integer") from exc
+        if not minimum <= parsed <= maximum:
+            raise HTTPException(status_code=422, detail=f"{field} must be between {minimum} and {maximum}")
+        return parsed
+
     def verify_object(digest: str) -> bool:
         """Verify evidence without exposing an object-store outage as a 500.
 
@@ -521,11 +555,16 @@ def create_app(
     @app.post("/v1/captures")
     async def capture(request: Request, user: Principal = Depends(principal)) -> dict[str, Any]:
         payload = await json_body(request)
-        text = str(payload.get("text") or "")
-        space_id = str(payload.get("spaceId") or "")
-        scope = str(payload.get("scope") or "team")
-        if not text or not space_id or scope not in {"team", "organization"}:
+        text = required_string(payload, "text")
+        space_id = required_string(payload, "spaceId")
+        scope = optional_string(payload, "scope") or "team"
+        if scope not in {"team", "organization"}:
             raise HTTPException(status_code=422, detail="text, spaceId and a shared scope are required")
+        title = optional_string(payload, "title")
+        source_type = optional_string(payload, "sourceType")
+        source_url = optional_string(payload, "url")
+        idempotency_key = optional_string(payload, "idempotencyKey")
+        requested_capture_acl = object_value(payload, "acl")
         if len(text.encode("utf-8")) > 10 * 1024 * 1024:
             raise HTTPException(status_code=413, detail="Text capture exceeds 10 MiB")
         if not can_contribute(user, space_id):
@@ -533,9 +572,9 @@ def create_app(
         vault_slug = shared_vault_slug(space_id)
         original = {
             "text": text,
-            "title": payload.get("title"),
-            "url": payload.get("url"),
-            "sourceType": payload.get("sourceType") or "text",
+            "title": title,
+            "url": source_url,
+            "sourceType": source_type or "text",
         }
         content = json.dumps(original, ensure_ascii=False, sort_keys=True).encode("utf-8")
         digest = hashlib.sha256(content).hexdigest()
@@ -549,7 +588,6 @@ def create_app(
         finally:
             Path(temporary_name).unlink(missing_ok=True)
         source_id = digest[:16]
-        requested_capture_acl = dict(payload.get("acl") or {})
         if scope == "organization" and "audience" not in requested_capture_acl:
             requested_capture_acl["audience"] = "organization"
         target_acl = normalize_acl(requested_capture_acl, owner=user.id, space_id=space_id)
@@ -558,7 +596,7 @@ def create_app(
         event = MemoryEvent(
             event_type="source.publication.proposed" if organization_promotion else "source.captured",
             stream_id=f"source:{space_id}:{source_id}",
-            idempotency_key=str(payload.get("idempotencyKey") or f"capture:{space_id}:{digest}"),
+            idempotency_key=idempotency_key or f"capture:{space_id}:{digest}",
             actor=EventActor(type="user", id=user.id),
             plugin=PluginRef(id="team-contribution", version="1.0.0"),
             scope="team" if organization_promotion else scope,  # type: ignore[arg-type]
@@ -569,11 +607,11 @@ def create_app(
                 "sourceId": source_id,
                 "vault": vault_slug,
                 "partition": "team",
-                "title": str(payload.get("title") or "Team capture"),
+                "title": title or "Team capture",
                 "body": text,
                 "metadata": {
-                    "source_type": str(payload.get("sourceType") or "text"),
-                    "source_url": payload.get("url"),
+                    "source_type": source_type or "text",
+                    "source_url": source_url,
                     "connector": "team",
                     "content_hash": digest,
                     "epistemic_status": "unverified",
@@ -739,10 +777,8 @@ def create_app(
     @app.post("/v1/search")
     async def search(request: Request, user: Principal = Depends(principal)) -> dict[str, Any]:
         payload = await json_body(request)
-        query = str(payload.get("query") or "").strip()
-        limit = min(max(int(payload.get("limit", 10)), 1), 100)
-        if not query:
-            raise HTTPException(status_code=422, detail="query is required")
+        query = required_string(payload, "query")
+        limit = bounded_integer(payload, "limit", default=10, minimum=1, maximum=100)
         candidates = repository.search(
             query,
             limit * 5,
@@ -1005,17 +1041,31 @@ def create_app(
     @app.post("/v1/proposals")
     async def create_proposal(request: Request, user: Principal = Depends(principal)) -> dict[str, Any]:
         payload = await json_body(request)
-        space_id = str(payload.get("spaceId") or "")
+        space_id = required_string(payload, "spaceId")
+        evidence_refs = validated_evidence_references(payload.get("evidenceRefs", []))
+        assertion = object_value(payload, "assertion")
+        proposal_scope = optional_string(payload, "scope") or "team"
+        if proposal_scope not in {"team", "organization"}:
+            raise HTTPException(status_code=422, detail="scope must be team or organization")
+        requested_acl_value = object_value(payload, "acl")
+        expected_version = payload.get("expectedStreamVersion")
+        if expected_version is not None:
+            if isinstance(expected_version, bool):
+                raise HTTPException(status_code=422, detail="expectedStreamVersion must be a non-negative integer")
+            try:
+                expected_version = int(expected_version)
+            except (TypeError, ValueError) as exc:
+                raise HTTPException(status_code=422, detail="expectedStreamVersion must be a non-negative integer") from exc
+            if expected_version < 0:
+                raise HTTPException(status_code=422, detail="expectedStreamVersion must be a non-negative integer")
+        requested_assertion_id = optional_string(payload, "assertionId")
+        idempotency_key = optional_string(payload, "idempotencyKey")
         if not can_contribute(user, space_id):
             raise HTTPException(status_code=403, detail="Cannot contribute to this space")
-        evidence_refs = validated_evidence_references(payload.get("evidenceRefs", []))
         missing = [ref for ref in evidence_refs if not verify_object(parse_reference(ref))]
         if missing:
             raise HTTPException(status_code=409, detail={"missingEvidence": missing})
-        assertion = dict(payload.get("assertion") or {})
         assertion["vault"] = shared_vault_slug(space_id)
-        proposal_scope = str(payload.get("scope") or "team")
-        requested_acl_value = dict(payload.get("acl") or {})
         if proposal_scope == "organization" and "audience" not in requested_acl_value:
             requested_acl_value["audience"] = "organization"
         requested_acl = normalize_acl(requested_acl_value, owner=user.id, space_id=space_id)
@@ -1024,11 +1074,10 @@ def create_app(
             if evidence_refs
             else requested_acl
         )
-        expected_version = payload.get("expectedStreamVersion")
         latest = repository.latest_stream_event(
-            f"assertion:{space_id}:{payload.get('assertionId')}"
-        ) if payload.get("assertionId") else None
-        stale = expected_version is not None and int(expected_version) != int(latest.stream_version if latest else 0)
+            f"assertion:{space_id}:{requested_assertion_id}"
+        ) if requested_assertion_id else None
+        stale = expected_version is not None and expected_version != int(latest.stream_version if latest else 0)
         policy = ReviewPolicy().evaluate(
             destination_scope=proposal_scope,
             confidence=assertion.get("confidence"),
@@ -1038,14 +1087,14 @@ def create_app(
             operation=str(assertion.get("operation") or "upsert"),
             stale_base=stale,
         )
-        assertion_id = str(payload.get("assertionId") or uuid7())
+        assertion_id = requested_assertion_id or uuid7()
         stream_id = f"assertion:{space_id}:{assertion_id}"
         if stale:
             stream_id = f"conflict:{stream_id}:{uuid7()}"
         event = MemoryEvent(
             event_type="assertion.proposed",
             stream_id=stream_id,
-            idempotency_key=str(payload.get("idempotencyKey") or f"proposal:{uuid7()}"),
+            idempotency_key=idempotency_key or f"proposal:{uuid7()}",
             actor=EventActor(type="user", id=user.id),
             plugin=PluginRef(id="team-contribution", version="1.0.0"),
             scope=proposal_scope,  # type: ignore[arg-type]
@@ -1063,7 +1112,7 @@ def create_app(
         )
         persisted, created = repository.append(
             event,
-            expected_stream_version=0 if stale else (int(expected_version) if expected_version is not None else None),
+            expected_stream_version=0 if stale else expected_version,
         )
         return {"ok": True, "event": persisted.to_dict(), "created": created}
 

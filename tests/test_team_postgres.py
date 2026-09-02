@@ -468,6 +468,15 @@ class TeamPostgresTests(unittest.TestCase):
         self.assertNotIn("sessionStorage", script.text)
 
         self.assertEqual(client.get("/metrics", headers=outsider).status_code, 403)
+        malformed_team_requests = (
+            ("/v1/captures", {"text": ["not", "a", "string"], "spaceId": space}),
+            ("/v1/search", {"query": "synthetic", "limit": ["not", "an", "integer"]}),
+            ("/v1/proposals", {"spaceId": space, "assertion": ["not", "an", "object"]}),
+        )
+        for path, payload in malformed_team_requests:
+            with self.subTest(path=path):
+                malformed = client.post(path, headers=member, json=payload)
+                self.assertEqual(malformed.status_code, 422, malformed.text)
         malformed_event = client.post(
             "/v1/events:append",
             headers=member,

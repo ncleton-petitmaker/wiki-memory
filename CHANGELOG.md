@@ -4,6 +4,12 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.21] - 2026-09-02
+
+### Reliability
+
+- Validate Team capture, search, and proposal request shapes before any authorization, storage, or database work. Malformed JSON types and stream versions now receive controlled `422` responses.
+
 ## [1.0.0-alpha.20] - 2026-09-02
 
 ### Reliability
@@ -185,7 +191,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.20...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.21...HEAD
+[1.0.0-alpha.21]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.21
 [1.0.0-alpha.20]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.20
 [1.0.0-alpha.19]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.19
 [1.0.0-alpha.18]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.18
