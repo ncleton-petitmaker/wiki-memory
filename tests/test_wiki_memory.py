@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -475,7 +476,7 @@ class WikiMemoryTests(unittest.TestCase):
         manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["name"], "wiki-memory")
         self.assertEqual(manifest["license"], "MIT")
-        self.assertEqual(manifest["version"], "1.0.0-alpha.7")
+        self.assertEqual(manifest["version"], "1.0.0-alpha.8")
         self.assertEqual(manifest["interface"]["defaultPrompt"][0], "Commençons.")
         self.assertTrue(all("$wiki-memory" not in prompt for prompt in manifest["interface"]["defaultPrompt"]))
         self.assertTrue(all("Use " not in prompt for prompt in manifest["interface"]["defaultPrompt"]))
@@ -501,6 +502,37 @@ class WikiMemoryTests(unittest.TestCase):
             {"valid_from", "valid_until", "recorded_at", "invalidated_at", "supersedes", "superseded_by"}
             <= set(temporal["properties"])
         )
+
+    def test_release_versions_are_aligned_across_runtimes_and_deployment(self) -> None:
+        """One release identity must drive the plugin, wheel, chart, and docs."""
+
+        plugin = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
+        release_version = plugin["version"]
+        match = re.fullmatch(r"(\d+\.\d+\.\d+)(?:-(alpha|beta|rc)\.(\d+))?", release_version)
+        self.assertIsNotNone(match, "releases must use MAJOR.MINOR.PATCH[-alpha.N|-beta.N|-rc.N]")
+        assert match is not None
+        prerelease_kind, prerelease_number = match.group(2), match.group(3)
+        pep440_suffixes = {"alpha": "a", "beta": "b", "rc": "rc"}
+        package_version = (
+            match.group(1)
+            if prerelease_kind is None
+            else f"{match.group(1)}{pep440_suffixes[prerelease_kind]}{prerelease_number}"
+        )
+
+        pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        self.assertIn(f'version = "{package_version}"', pyproject)
+        init_module = (ROOT / "src" / "wiki_memory" / "__init__.py").read_text(encoding="utf-8")
+        self.assertIn(f'__version__ = "{package_version}"', init_module)
+        self.assertEqual(load_data(ROOT / "deploy" / "helm" / "wiki-memory" / "Chart.yaml")["version"], release_version)
+        self.assertEqual(
+            load_data(ROOT / "deploy" / "helm" / "wiki-memory" / "Chart.yaml")["appVersion"], release_version
+        )
+        self.assertEqual(
+            load_data(ROOT / "deploy" / "helm" / "wiki-memory" / "values.yaml")["image"]["tag"], release_version
+        )
+        self.assertIn(f"Current version: `{release_version}`", (ROOT / "README.md").read_text(encoding="utf-8"))
+        self.assertIn(f"Version actuelle : `{release_version}`", (ROOT / "README.fr.md").read_text(encoding="utf-8"))
+        self.assertIn(f"## [{release_version}]", (ROOT / "CHANGELOG.md").read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

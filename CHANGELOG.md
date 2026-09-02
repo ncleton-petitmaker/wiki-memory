@@ -4,6 +4,14 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.8] - 2026-09-02
+
+### Fixed
+
+- Corrected the retained benchmark-evidence binding and added a portable
+  checksum verifier that CI and release validation execute. Altered, missing,
+  symlinked, or unlisted evidence reports now fail the build.
+
 ## [1.0.0-alpha.7] - 2026-09-02
 
 - Retain successful 100k local-QMD and 1M Team performance reports.
@@ -100,7 +108,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.7...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.8...HEAD
+[1.0.0-alpha.8]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.8
 [1.0.0-alpha.7]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.7
 [1.0.0-alpha.6]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.6
 [1.0.0-alpha.5]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.5

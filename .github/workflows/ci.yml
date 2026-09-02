@@ -30,6 +30,7 @@ jobs:
           python -c 'from pathlib import Path; from wiki_memory.layout import init_memory; import sys; init_memory(Path(sys.argv[1]), {"name":"CI crash", "language":"en"})' "$tmpdir/memory"
           python scripts/crash_campaign.py --root "$tmpdir/memory" --rounds 20 --events-per-worker 10 --delay 0.01 --seed 20260902
       - run: python scripts/schema_validate.py
+      - run: python scripts/verify_evidence.py
       - run: python scripts/plugin_conformance.py
       - run: python scripts/deployment_validate.py
       - run: python scripts/privacy_scan.py .

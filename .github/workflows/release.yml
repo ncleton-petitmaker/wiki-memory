@@ -52,6 +52,7 @@ jobs:
           uv run --frozen python -c 'from pathlib import Path; from wiki_memory.layout import init_memory; import sys; init_memory(Path(sys.argv[1]), {"name":"release crash", "language":"en"})' "$tmpdir/memory"
           uv run --frozen python scripts/crash_campaign.py --root "$tmpdir/memory" --rounds 100 --events-per-worker 20 --delay 0.01 --seed 20260902
       - run: uv run --frozen python scripts/schema_validate.py
+      - run: uv run --frozen python scripts/verify_evidence.py
       - run: uv run --frozen python scripts/plugin_conformance.py
       - run: uv run --frozen python scripts/deployment_validate.py
       - uses: azure/setup-helm@v5.0.1

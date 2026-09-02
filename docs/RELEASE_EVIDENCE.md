@@ -7,10 +7,10 @@ review remains open until that party supplies evidence.
 
 ## Reproducible, synthetic gates
 
-| Requirement | Executable evidence | Evidence status for alpha.7 |
+| Requirement | Executable evidence | Evidence status for alpha.8 |
 | --- | --- | --- |
-| Durable solo capture and QMD retrieval at 100,000 documents | `scripts/load_benchmark.py --documents 100000 --qmd --assert-targets --report …` | Passed on 2026-09-02 with QMD 2.8.3: capture p95 16.926 ms and search p95 293.296 ms. The exact report is [`local-100k-qmd-2026-09-02.json`](evidence/local-100k-qmd-2026-09-02.json), SHA-256 `517e691e0b5c7b2e99a47bbeb17531ed362027d50edb8e3f3051049dbb09833e`. |
-| Team retrieval at one million fragments | `scripts/team_load_benchmark.py --fragments 1000000 --assert-target --report …` | Passed on 2026-09-02: search p95 3.502 ms; report [`team-1m-2026-09-02.json`](evidence/team-1m-2026-09-02.json). |
+| Durable solo capture and QMD retrieval at 100,000 documents | `scripts/load_benchmark.py --documents 100000 --qmd --assert-targets --report …` | Passed on 2026-09-02 with QMD 2.8.3: capture p95 16.926 ms and search p95 293.296 ms. Retained report: [`local-100k-qmd-2026-09-02.json`](evidence/local-100k-qmd-2026-09-02.json). |
+| Team retrieval at one million fragments | `scripts/team_load_benchmark.py --fragments 1000000 --assert-target --report …` | Passed on 2026-09-02: search p95 3.502 ms; retained report: [`team-1m-2026-09-02.json`](evidence/team-1m-2026-09-02.json). |
 | 100 active source streams and 500 authorized members | `scripts/team_load_benchmark.py --workers 100 --members 500 --assert-operational-scale --report …` | Passed on 2026-09-02: 100 streams, 500 members and zero failed authorized searches. |
 | Team WAL recovery protocol | `scripts/team_pitr_rehearsal.py` | Exercised by the release validation workflow against synthetic PostgreSQL and verified recovered evidence. |
 | Solo crash boundary | `scripts/crash_campaign.py` | Exercised by the release validation workflow; acknowledged writes are verified after recovery. |
@@ -23,10 +23,13 @@ review remains open until that party supplies evidence.
 
 All fixtures for these commands are synthetic. The supplied benchmark tools
 refuse to claim a full-scale target from a smaller corpus.
+The retained report bytes are bound by the
+[`evidence/SHA256SUMS`](evidence/SHA256SUMS) manifest; CI runs
+`scripts/verify_evidence.py` to reject missing, altered, or unlisted reports.
 
 ## Current gate status
 
-- `proven by alpha.7 CI`: canonical append-only ledger, content-addressed
+- `proven by alpha.8 CI`: canonical append-only ledger, content-addressed
   evidence, projections/rebuild, plugin contracts, isolated Team paths,
   ACL-before-search, crash recovery, and a synthetic WAL-recovery rehearsal.
 - `proven by retained synthetic reports`: the 100,000-document local target,
@@ -45,7 +48,7 @@ and [TEAM_SELF_HOSTING.md](TEAM_SELF_HOSTING.md) for the operator procedures.
 
 ## Stable-tag control
 
-The release workflow treats a semantic pre-release such as `v1.0.0-alpha.7`
+The release workflow treats a semantic pre-release such as `v1.0.0-alpha.8`
 as an alpha. A stable tag such as `v1.0.0` first enters the GitHub
 `stable-release` environment. Configure that environment with required
 reviewers and its three variables, each pointing to a reviewable HTTPS record:
