@@ -4,6 +4,15 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.10] - 2026-09-02
+
+### Security
+
+- Added an executable Compose image-policy gate: API and worker refuse to
+  start unless the configured Wiki Memory image is the exact official GHCR
+  SHA-256 digest. The only bypass is an explicit synthetic CI/development
+  override, absent from the operator template.
+
 ## [1.0.0-alpha.9] - 2026-09-02
 
 ### Added
@@ -116,7 +125,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.9...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.10...HEAD
+[1.0.0-alpha.10]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.10
 [1.0.0-alpha.9]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.9
 [1.0.0-alpha.8]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.8
 [1.0.0-alpha.7]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.7

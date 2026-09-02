@@ -32,6 +32,12 @@ The API accepts at most 100 events per append request by default (`WIKI_MEMORY_M
 
 The stack includes API, worker, PostgreSQL, MinIO, bucket creation, and object versioning. Every image reference is digest-pinned; Compose deliberately refuses a mutable Wiki Memory tag. Containers are non-root, read-only, `no-new-privileges`, and use tmpfs for temporary uploads.
 
+The refusal is executable: an `image-policy` init service checks the exact
+`ghcr.io/ncleton-petitmaker/wiki-memory@sha256:<digest>` shape before API or
+worker may start. `WIKI_MEMORY_ALLOW_UNVERIFIED_IMAGE=1` exists only for the
+synthetic CI/local-development smoke test; it is not in `.env.example` and
+must never appear in an operator deployment.
+
 Compose volumes are durability, not backup. This topology is single-node and is not a production HA promise.
 
 ## Helm

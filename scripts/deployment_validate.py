@@ -47,6 +47,12 @@ def main() -> int:
         errors,
     )
     require(
+        "WIKI_MEMORY_ALLOW_UNVERIFIED_IMAGE: '1'" in ci_workflow
+        and "WIKI_MEMORY_ALLOW_UNVERIFIED_IMAGE" not in release_workflow,
+        "Only the synthetic CI smoke test may opt out of the image-digest gate",
+        errors,
+    )
+    require(
         "compose-smoke:" in release_workflow
         and "needs: [artifacts, image, compose-smoke]" in release_workflow
         and "wiki-memory-release-compose" in release_workflow
@@ -55,6 +61,18 @@ def main() -> int:
         errors,
     )
     require("WIKI_MEMORY_IMAGE:-" not in compose and "build:" not in compose, "Compose reference deployment must not use mutable/default or locally built images", errors)
+    require(
+        "WIKI_MEMORY_ALLOW_UNVERIFIED_IMAGE" not in (ROOT / "deploy/team/.env.example").read_text(encoding="utf-8"),
+        "Compose operator template must not offer an unverified-image bypass",
+        errors,
+    )
+    require(
+        "image-policy:" in compose
+        and "wiki_memory.compose_policy" in compose
+        and "image-policy: {condition: service_completed_successfully}" in compose,
+        "Compose must gate API and worker startup on executable image-digest validation",
+        errors,
+    )
     require("@sha256:" in (ROOT / "deploy/team/.env.example").read_text(encoding="utf-8"), "Compose example must require a digest placeholder", errors)
     require("USER wiki-memory" in dockerfile, "Team image must run as non-root", errors)
     require("--require-hashes" in dockerfile, "Team image dependencies must be hash-locked", errors)

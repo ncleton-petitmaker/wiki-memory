@@ -122,6 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       WIKI_MEMORY_IMAGE: wiki-memory-compose-ci
+      WIKI_MEMORY_ALLOW_UNVERIFIED_IMAGE: '1'
       POSTGRES_PASSWORD: synthetic-postgres-password
       MINIO_ROOT_USER: wiki-memory-ci
       MINIO_ROOT_PASSWORD: synthetic-minio-password
