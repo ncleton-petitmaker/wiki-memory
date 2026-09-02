@@ -8,6 +8,7 @@ import secrets
 import tempfile
 import threading
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -174,6 +175,9 @@ def create_app(
         "WIKI_MEMORY_MAX_BLOB_BYTES", 256 * 1024 * 1024, minimum=1024, maximum=1024 * 1024 * 1024
     )
     max_events_per_append = configured_limit("WIKI_MEMORY_MAX_EVENTS_PER_APPEND", 100, minimum=1, maximum=1000)
+    offline_lease_seconds = configured_limit(
+        "WIKI_MEMORY_OFFLINE_LEASE_SECONDS", 24 * 60 * 60, minimum=0, maximum=31 * 24 * 60 * 60
+    )
     app = FastAPI(title="Wiki Memory Team", version="1.0.0")
     metrics_lock = threading.Lock()
     request_metrics: dict[tuple[str, int], list[float]] = {}
@@ -469,13 +473,16 @@ def create_app(
 
     @app.get("/v1/session")
     def session(user: Principal = Depends(principal)) -> dict[str, Any]:
+        checked_at = datetime.now(timezone.utc).replace(microsecond=0)
+        offline_lease_expires_at = checked_at + timedelta(seconds=offline_lease_seconds)
         return {
             "principalId": user.id,
             "kind": user.kind,
             "roles": sorted(role.value for role in user.roles),
             "spaces": sorted(user.spaces),
             "groups": sorted(user.groups),
-            "checkedAt": utc_now(),
+            "checkedAt": checked_at.isoformat().replace("+00:00", "Z"),
+            "offlineLeaseExpiresAt": offline_lease_expires_at.isoformat().replace("+00:00", "Z"),
         }
 
     @app.get("/metrics", response_class=PlainTextResponse)

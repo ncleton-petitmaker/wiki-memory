@@ -8,6 +8,7 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Callable
@@ -121,21 +122,73 @@ def team_session_path(root: Path) -> Path:
     return root_runtime_dir(root) / "team" / "session.json"
 
 
+MAX_OFFLINE_LEASE_SECONDS = 31 * 24 * 60 * 60
+
+
+def _parse_session_timestamp(value: Any) -> datetime | None:
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if timestamp.tzinfo is None:
+        return None
+    return timestamp.astimezone(timezone.utc)
+
+
 def cached_team_principal(root: Path) -> Principal | None:
-    """Load the last authenticated Team entitlement snapshot, failing closed."""
+    """Load a still-valid Team entitlement lease, failing closed.
+
+    Shared projections are deliberately unavailable after this lease expires.
+    That limits a removed member's offline access window; the next successful
+    Team sync atomically refreshes the snapshot from the server.
+    """
 
     session_path = team_session_path(root)
     if not session_path.is_file():
         return None
     try:
         session = json.loads(session_path.read_text(encoding="utf-8"))
+        if not isinstance(session, dict):
+            return None
+        checked_at = _parse_session_timestamp(session.get("checkedAt"))
+        expires_at = _parse_session_timestamp(session.get("offlineLeaseExpiresAt"))
+        now = datetime.now(timezone.utc)
+        if (
+            checked_at is None
+            or expires_at is None
+            or checked_at > now + timedelta(minutes=5)
+            or expires_at <= now
+            or expires_at <= checked_at
+            or expires_at - checked_at > timedelta(seconds=MAX_OFFLINE_LEASE_SECONDS)
+        ):
+            return None
         valid_roles = {role.value for role in Role}
+        principal_id = session["principalId"]
+        roles = session.get("roles", [])
+        spaces = session.get("spaces", [])
+        groups = session.get("groups", [])
+        kind = session.get("kind") or "user"
+        if (
+            not isinstance(principal_id, str)
+            or not principal_id
+            or not isinstance(roles, list)
+            or not all(isinstance(item, str) for item in roles)
+            or not isinstance(spaces, list)
+            or not all(isinstance(item, str) and item for item in spaces)
+            or not isinstance(groups, list)
+            or not all(isinstance(item, str) and item for item in groups)
+            or not isinstance(kind, str)
+            or not kind
+        ):
+            return None
         return Principal(
-            str(session["principalId"]),
-            frozenset(Role(item) for item in session.get("roles", []) if item in valid_roles),
-            frozenset(str(item) for item in session.get("spaces", [])),
-            frozenset(str(item) for item in session.get("groups", [])),
-            str(session.get("kind") or "user"),
+            principal_id,
+            frozenset(Role(item) for item in roles if item in valid_roles),
+            frozenset(spaces),
+            frozenset(groups),
+            kind,
         )
     except (KeyError, TypeError, ValueError, json.JSONDecodeError):
         return None

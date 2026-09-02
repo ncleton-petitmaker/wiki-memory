@@ -30,6 +30,14 @@ file or note uses the normal capture/proposal flow instead.
 
 The API accepts at most 100 events per append request by default (`WIKI_MEMORY_MAX_EVENTS_PER_APPEND`, bounded between 1 and 1,000). Keep this deliberately finite: a connector resumes through durable checkpoints rather than placing unbounded work inside one transaction.
 
+Each successful `/v1/session` response also carries an authenticated entitlement
+lease for the local shared-projection cache. It expires after 24 hours by
+default (`WIKI_MEMORY_OFFLINE_LEASE_SECONDS`, bounded from `0` to 31 days).
+Set it to `0` for environments where shared Team material must never remain
+searchable while the endpoint is unreachable. A client fails closed when the
+lease is absent, malformed, expired, future-dated, or exceeds the server's
+maximum; a successful sync atomically replaces it.
+
 The stack includes API, worker, PostgreSQL, MinIO, bucket creation, and object versioning. Every image reference is digest-pinned; Compose deliberately refuses a mutable Wiki Memory tag. Containers are non-root, read-only, `no-new-privileges`, and use tmpfs for temporary uploads.
 
 The refusal is executable: an `image-policy` init service checks the exact
@@ -141,6 +149,9 @@ Technical logs must contain IDs and error classes, not event payload, transcript
 
 The solo ledger continues. Shared projections remain readable from the authorized local cache using the last successful Team session. This device-local entitlement snapshot lives in the OS runtime directory, outside the memory root, backups, and Syncthing packs. Shared writes stay in the outbox. On reconnection the client first refreshes identity, roles, groups, and spaces; a removed entitlement immediately hides the corresponding local projection from search. Blobs upload first, events second, then pull resumes from the durable cursor. Any conflict becomes a review proposal and produces `ok: false`; the client never claims a successful sync.
 
-Offline access deliberately uses the last successful session and therefore has the same revocation delay as the offline period. Deployments needing immediate revocation must disable offline shared-cache access at the endpoint/device-management layer; the alpha does not yet implement expiring offline leases.
+Offline access deliberately uses only an unexpired entitlement lease from the
+last successful session. Its duration is the maximum revocation delay while a
+device remains disconnected. Set `WIKI_MEMORY_OFFLINE_LEASE_SECONDS=0` when
+immediate revocation is more important than offline shared-cache access.
 
 QMD indexes private vaults only. Shared Team projections use authorization-filtered local lexical retrieval so ACL checks happen before their contents are searched. If an older QMD configuration mentions a Team vault, queries fail over to the safe lexical path until `wiki-memory index` rebuilds the private-only index.

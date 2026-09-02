@@ -43,6 +43,7 @@ spec:
             - {name: OIDC_AUDIENCE, value: {{ $.Values.oidc.audience | quote }}}
             - {name: OIDC_JWKS_URL, value: {{ $.Values.oidc.jwksUrl | quote }}}
             - {name: OIDC_GROUP_SPACE_MAP, value: {{ $.Values.oidc.groupSpaceMap | quote }}}
+            - {name: WIKI_MEMORY_OFFLINE_LEASE_SECONDS, value: {{ $.Values.offlineLeaseSeconds | quote }}}
             - {name: WIKI_MEMORY_TEAM_PLUGIN_TRUST_KEYS, value: {{ $.Values.pluginPolicy.trustKeys | quote }}}
             - {name: WIKI_MEMORY_TEAM_APPROVED_PLUGIN_IDS, value: {{ $.Values.pluginPolicy.approvedPluginIds | quote }}}
           securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}

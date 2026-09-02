@@ -12,6 +12,8 @@
 - Safe backup extraction, per-file hash manifest, SQLite integrity and event-count verification.
 - Team event/job transactional outbox, advisory stream lock, `FOR UPDATE SKIP LOCKED`, retry/dead state.
 - ACL filtering on events, search results, and blob reads.
+- Expiring Team entitlement leases: cached shared projections fail closed after
+  a bounded offline window and refresh only through an authenticated session.
 - Download-and-hash evidence before replicated event insertion.
 - No silent Markdown overwrite or stale semantic merge.
 

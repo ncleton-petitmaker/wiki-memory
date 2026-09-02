@@ -39,6 +39,11 @@ def main() -> int:
         errors,
     )
     require(
+        "WIKI_MEMORY_OFFLINE_LEASE_SECONDS" in compose,
+        "Compose must configure the bounded Team offline-entitlement lease",
+        errors,
+    )
+    require(
         "compose-smoke:" in ci_workflow
         and "docker compose --project-name wiki-memory-compose-ci" in ci_workflow
         and "up --detach --wait --wait-timeout 120" in ci_workflow
@@ -125,6 +130,11 @@ def main() -> int:
         "WIKI_MEMORY_TEAM_PLUGIN_TRUST_KEYS" in workloads
         and "WIKI_MEMORY_TEAM_APPROVED_PLUGIN_IDS" in workloads,
         "Helm workloads must provide the external plugin trust policy",
+        errors,
+    )
+    require(
+        "WIKI_MEMORY_OFFLINE_LEASE_SECONDS" in workloads,
+        "Helm workloads must provide the bounded Team offline-entitlement lease",
         errors,
     )
     require(".Values.postgresql.password | quote" not in storage, "Helm must not render PostgreSQL password into workload", errors)

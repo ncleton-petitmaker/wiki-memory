@@ -18,7 +18,7 @@ flowchart LR
   T --> R[Review console]
 ```
 
-GitHub carries code, schemas, CI, signed artifacts, and a catalog. It never carries user memory. Runtime caches, QMD indexes, browser state, credentials, models, and temporary media remain outside the memory root. The durable solo ledger and evidence live under `Mémoire/.wiki-memory/data/` because they are user data, not runtime cache.
+GitHub carries code, schemas, CI, signed artifacts, and a catalog. It never carries user memory. Runtime caches, QMD indexes, browser state, credentials, models, and temporary media remain outside the memory root. The durable solo ledger and evidence live under `Mémoire/.wiki-memory/data/` because they are user data, not runtime cache. The device-local Team entitlement lease also remains outside the root; it is bounded and expires before shared cache can be searched offline.
 
 The cached Team entitlement session is device-local authorization state, not memory. It also stays in the OS runtime directory and is excluded from backup and Syncthing; restoring shared projections on another device therefore exposes nothing until that device authenticates.
 

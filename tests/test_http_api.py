@@ -5,6 +5,7 @@ import json
 import sys
 import tempfile
 import unittest
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -182,6 +183,8 @@ class LocalApiTests(unittest.TestCase):
 
         session_path = team_session_path(self.root)
         session_path.parent.mkdir(parents=True, exist_ok=True)
+        checked_at = datetime.now(timezone.utc).replace(microsecond=0)
+        lease_expires_at = checked_at + timedelta(hours=1)
         session_path.write_text(
             json.dumps(
                 {
@@ -190,6 +193,8 @@ class LocalApiTests(unittest.TestCase):
                     "roles": ["reader"],
                     "spaces": ["marketing"],
                     "groups": [],
+                    "checkedAt": checked_at.isoformat().replace("+00:00", "Z"),
+                    "offlineLeaseExpiresAt": lease_expires_at.isoformat().replace("+00:00", "Z"),
                 }
             ),
             encoding="utf-8",
@@ -205,6 +210,25 @@ class LocalApiTests(unittest.TestCase):
                     "roles": ["reader"],
                     "spaces": [],
                     "groups": [],
+                    "checkedAt": checked_at.isoformat().replace("+00:00", "Z"),
+                    "offlineLeaseExpiresAt": lease_expires_at.isoformat().replace("+00:00", "Z"),
+                }
+            ),
+            encoding="utf-8",
+        )
+        self.assertEqual(self.client.get("/v1/events", headers=self.headers).json()["events"], [])
+        self.assertEqual(self.client.get(f"/v1/blobs/{digest}", headers=self.headers).status_code, 404)
+
+        session_path.write_text(
+            json.dumps(
+                {
+                    "principalId": "reader",
+                    "kind": "user",
+                    "roles": ["reader"],
+                    "spaces": ["marketing"],
+                    "groups": [],
+                    "checkedAt": "2026-01-01T00:00:00Z",
+                    "offlineLeaseExpiresAt": "2026-01-01T01:00:00Z",
                 }
             ),
             encoding="utf-8",

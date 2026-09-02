@@ -4,6 +4,12 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.23] - 2026-09-02
+
+### Security
+
+- Bound offline Team visibility to a server-issued entitlement lease. Shared local projections now fail closed when a lease is absent, expired, malformed, future-dated, or longer than the 31-day policy ceiling; deployments can set the lease to `0` for immediate offline revocation.
+
 ## [1.0.0-alpha.22] - 2026-09-02
 
 ### Reliability
@@ -197,7 +203,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.22...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.23...HEAD
+[1.0.0-alpha.23]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.23
 [1.0.0-alpha.22]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.22
 [1.0.0-alpha.21]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.21
 [1.0.0-alpha.20]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.20

@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/ncleton-petitmaker/wiki-memory
-  tag: 1.0.0-alpha.22
+  tag: 1.0.0-alpha.23
   # Required: signed GHCR release digest, for example sha256:abc... .
   digest: ""
   pullPolicy: IfNotPresent
@@ -17,6 +17,9 @@ oidc:
   groupSpaceMap: "{}"
 bootstrapToken: ""
 restoreAttestationToken: change-me-before-install
+# Seconds an authenticated Team cache may remain visible offline. Set 0 for
+# immediate fail-closed shared-cache behavior; the server caps this at 31 days.
+offlineLeaseSeconds: 86400
 pluginPolicy:
   # JSON public-key map and explicit administrator allowlist for signed
   # executable/OCI plugins. Private signing keys never enter this chart.

@@ -12,6 +12,7 @@ import tempfile
 import types
 import unittest
 from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -59,6 +60,7 @@ from wiki_memory.team import (
     Role,
     TeamClient,
     can_read,
+    cached_team_principal,
     derive_acl,
     detach_team,
     normalize_acl,
@@ -562,13 +564,15 @@ class V1Tests(unittest.TestCase):
         class Client(TeamClient):
             def _request(self, method, path, **kwargs):
                 if path == "/v1/session":
+                    checked_at = datetime.now(timezone.utc).replace(microsecond=0)
                     session = {
                         "principalId": "member",
                         "kind": "user",
                         "roles": ["reader"],
                         "spaces": ["marketing"],
                         "groups": ["marketing"],
-                        "checkedAt": "2026-01-01T00:00:00Z",
+                        "checkedAt": checked_at.isoformat().replace("+00:00", "Z"),
+                        "offlineLeaseExpiresAt": (checked_at + timedelta(hours=1)).isoformat().replace("+00:00", "Z"),
                     }
                     return 200, json.dumps(session).encode(), {}
                 if path.startswith("/v1/events"):
@@ -584,6 +588,7 @@ class V1Tests(unittest.TestCase):
         self.assertEqual(result["pulled"], 1)
         self.assertTrue(engine.evidence.has("sha256:" + digest))
         self.assertEqual(engine.events.pending_outbox(), [])
+        self.assertEqual(cached_team_principal(self.root).id, "member")
 
     def test_publication_uses_isolated_team_vault_and_detach_is_read_only(self) -> None:
         captured = capture_item(self.root, "knowledge", source_type="note", text="Private first")
@@ -655,6 +660,8 @@ class V1Tests(unittest.TestCase):
         )
         session_path = team_session_path(self.root)
         session_path.parent.mkdir(parents=True, exist_ok=True)
+        checked_at = datetime.now(timezone.utc).replace(microsecond=0)
+        lease_expires_at = checked_at + timedelta(hours=1)
         session_path.write_text(
             json.dumps(
                 {
@@ -663,6 +670,8 @@ class V1Tests(unittest.TestCase):
                     "roles": ["reader"],
                     "spaces": ["marketing"],
                     "groups": [],
+                    "checkedAt": checked_at.isoformat().replace("+00:00", "Z"),
+                    "offlineLeaseExpiresAt": lease_expires_at.isoformat().replace("+00:00", "Z"),
                 }
             ),
             encoding="utf-8",
@@ -677,12 +686,34 @@ class V1Tests(unittest.TestCase):
                     "roles": ["reader"],
                     "spaces": [],
                     "groups": [],
+                    "checkedAt": checked_at.isoformat().replace("+00:00", "Z"),
+                    "offlineLeaseExpiresAt": lease_expires_at.isoformat().replace("+00:00", "Z"),
                 }
             ),
             encoding="utf-8",
         )
         results = query_memory(self.root, "Private source")["results"]
         self.assertTrue(all(not item["file"].startswith("team-marketing/") for item in results))
+
+    def test_cached_team_entitlement_requires_a_bounded_unexpired_lease(self) -> None:
+        session_path = team_session_path(self.root)
+        session_path.parent.mkdir(parents=True, exist_ok=True)
+        checked_at = datetime.now(timezone.utc).replace(microsecond=0)
+        session = {
+            "principalId": "member",
+            "kind": "user",
+            "roles": ["reader"],
+            "spaces": ["marketing"],
+            "groups": [],
+            "checkedAt": checked_at.isoformat().replace("+00:00", "Z"),
+            "offlineLeaseExpiresAt": (checked_at + timedelta(days=32)).isoformat().replace("+00:00", "Z"),
+        }
+        session_path.write_text(json.dumps(session), encoding="utf-8")
+        self.assertIsNone(cached_team_principal(self.root))
+
+        session["offlineLeaseExpiresAt"] = (checked_at + timedelta(hours=1)).isoformat().replace("+00:00", "Z")
+        session_path.write_text(json.dumps(session), encoding="utf-8")
+        self.assertEqual(cached_team_principal(self.root).id, "member")
 
     def test_retracted_assertion_is_not_returned_as_current_knowledge(self) -> None:
         engine = MemoryEngine(self.root)
