@@ -4,6 +4,12 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.14] - 2026-09-02
+
+### Fixed
+
+- Complete the real-PostgreSQL coverage for the evidence-integrity worker path after CI caught a missing test dependency import in Alpha.13.
+
 ## [1.0.0-alpha.13] - 2026-09-02
 
 ### Fixed
@@ -143,7 +149,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.13...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.14...HEAD
+[1.0.0-alpha.14]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.14
 [1.0.0-alpha.13]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.13
 [1.0.0-alpha.12]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.12
 [1.0.0-alpha.11]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.11
