@@ -13,6 +13,12 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Run Team-server configuration tests only where the optional `server` bundle
   is installed; the Team integration job continues to execute them with the
   real dependency set.
+- Make the official plugin catalogue byte-stable across GitHub runners and
+  preserve isolated connector execution on Windows without inheriting secrets.
+- Keep content-addressed evidence and search-result path identifiers portable
+  across Windows, macOS, and Linux; Team entitlement filtering is therefore
+  tested against the same public path contract everywhere.
+- Audit the frozen project dependency graph rather than mutable runner tooling.
 
 ## [1.0.0-alpha.2] - 2026-09-02
 

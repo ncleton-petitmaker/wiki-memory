@@ -162,7 +162,10 @@ def _fallback_search(
                     first = min((lowered.find(term) for term in terms if term in lowered), default=0)
                     snippet = text[max(0, first - 120) : first + 360].replace("\n", " ").strip()
                     results.append(
-                        {"file": str(path.relative_to(root)), "score": score, "snippet": snippet}
+                        # ``file`` is an API identifier, not an OS-native path.
+                        # Keep it stable across Windows, macOS, and Linux so
+                        # callers can safely compare it with projected paths.
+                        {"file": path.relative_to(root).as_posix(), "score": score, "snippet": snippet}
                     )
     return sorted(results, key=lambda item: (-item["score"], item["file"]))[:limit]
 
