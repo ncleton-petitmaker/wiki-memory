@@ -68,6 +68,14 @@ def main() -> int:
         "Release publication must wait for a smoke test of the exact pushed image digest",
         errors,
     )
+    require(
+        "Verify release bundles as a consumer" in release_workflow
+        and "cosign verify-blob --bundle SHA256SUMS.sigstore.json" in release_workflow
+        and "cosign verify-blob --bundle plugin-catalog.sigstore.json" in release_workflow
+        and "--certificate-oidc-issuer https://token.actions.githubusercontent.com" in release_workflow,
+        "Release must verify its keyless artifact signatures before publishing",
+        errors,
+    )
     require("WIKI_MEMORY_IMAGE:-" not in compose and "build:" not in compose, "Compose reference deployment must not use mutable/default or locally built images", errors)
     require(
         "WIKI_MEMORY_ALLOW_UNVERIFIED_IMAGE" not in (ROOT / "deploy/team/.env.example").read_text(encoding="utf-8"),

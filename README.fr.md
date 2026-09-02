@@ -2,7 +2,7 @@
 
 Wiki Memory est un moteur de mémoire MIT, local-first, self-hosted et extensible par plugins. Il fonctionne seul, hors ligne, sans compte. Le bundle optionnel `team` ajoute OIDC, espaces partagés, ACL, revue, audit et réplication ; il n’est jamais une dépendance du mode solo.
 
-Version actuelle : `1.0.0-alpha.14`. La fondation V1 est exécutable, mais le tag stable `1.0.0` reste conditionné à une restauration sur l’infrastructure de production et à un audit externe. L’état exact des preuves est consigné dans [Évidence de release](docs/RELEASE_EVIDENCE.md).
+Version actuelle : `1.0.0-alpha.15`. La fondation V1 est exécutable, mais le tag stable `1.0.0` reste conditionné à une restauration sur l’infrastructure de production et à un audit externe. L’état exact des preuves est consigné dans [Évidence de release](docs/RELEASE_EVIDENCE.md).
 
 ## Ce qui est canonique
 
@@ -134,6 +134,6 @@ python scripts/privacy_scan.py .
 
 CI couvre Python 3.10/3.12 sur Linux, macOS et Windows, PostgreSQL réel, scan de secrets, SBOM, provenance et signatures Cosign des releases et images GHCR. Seules des fixtures synthétiques sont admises dans GitHub ; aucune mémoire utilisateur n’y transite.
 
-Documentation : [Architecture](docs/ARCHITECTURE.md) · [Plugin SDK](docs/PLUGIN_SDK.md) · [Team](docs/TEAM_SELF_HOSTING.md) · [Fiabilité](docs/RELIABILITY.md) · [Évidence de release](docs/RELEASE_EVIDENCE.md) · [CLI](docs/CLI_REFERENCE.md) · [Sécurité](SECURITY.md).
+Documentation : [Architecture](docs/ARCHITECTURE.md) · [Plugin SDK](docs/PLUGIN_SDK.md) · [Team](docs/TEAM_SELF_HOSTING.md) · [Fiabilité](docs/RELIABILITY.md) · [Vérifier une release](docs/VERIFY_RELEASE.md) · [Évidence de release](docs/RELEASE_EVIDENCE.md) · [CLI](docs/CLI_REFERENCE.md) · [Sécurité](SECURITY.md).
 
 Licence : [MIT](LICENSE).

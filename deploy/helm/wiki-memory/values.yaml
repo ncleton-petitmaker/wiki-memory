@@ -1,6 +1,6 @@
 image:
   repository: ghcr.io/ncleton-petitmaker/wiki-memory
-  tag: 1.0.0-alpha.14
+  tag: 1.0.0-alpha.15
   # Required: signed GHCR release digest, for example sha256:abc... .
   digest: ""
   pullPolicy: IfNotPresent

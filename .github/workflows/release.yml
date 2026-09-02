@@ -102,6 +102,19 @@ jobs:
       - uses: sigstore/cosign-installer@v4.1.2
       - run: cosign sign-blob --yes --bundle dist/SHA256SUMS.sigstore.json dist/SHA256SUMS
       - run: cosign sign-blob --yes --bundle dist/plugin-catalog.sigstore.json dist/plugin-catalog.json
+      - name: Verify release bundles as a consumer
+        env:
+          RELEASE_CERTIFICATE_IDENTITY: >-
+            ^https://github.com/${{ github.repository }}/.github/workflows/release.yml@refs/tags/v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$
+        run: |
+          cd dist
+          sha256sum --check SHA256SUMS
+          cosign verify-blob --bundle SHA256SUMS.sigstore.json \
+            --certificate-identity-regexp "$RELEASE_CERTIFICATE_IDENTITY" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com SHA256SUMS
+          cosign verify-blob --bundle plugin-catalog.sigstore.json \
+            --certificate-identity-regexp "$RELEASE_CERTIFICATE_IDENTITY" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com plugin-catalog.json
       - uses: actions/attest-build-provenance@v4.2.2
         with: {subject-path: "dist/*"}
       - uses: actions/upload-artifact@v7

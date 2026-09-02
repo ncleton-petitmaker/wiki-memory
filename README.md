@@ -2,7 +2,7 @@
 
 Wiki Memory is an MIT, local-first, self-hosted memory engine with a capability-based plugin architecture. Solo mode works offline with no account or server. The optional `team` bundle adds OIDC identities, shared spaces, ACLs, review, audit, and replication without becoming a Core dependency.
 
-Current version: `1.0.0-alpha.14`. The executable V1 foundation is present; stable `1.0.0` remains gated on production recovery evidence and an external audit. The exact evidence status is recorded in [Release evidence](docs/RELEASE_EVIDENCE.md).
+Current version: `1.0.0-alpha.15`. The executable V1 foundation is present; stable `1.0.0` remains gated on production recovery evidence and an external audit. The exact evidence status is recorded in [Release evidence](docs/RELEASE_EVIDENCE.md).
 
 ## Canonical model
 
@@ -109,6 +109,6 @@ python scripts/privacy_scan.py .
 python -m pip_audit --skip-editable
 ```
 
-GitHub contains code, specs, CI, signed releases, and synthetic fixtures only—never user memory. Documentation: [Architecture](docs/ARCHITECTURE.md), [Plugin SDK](docs/PLUGIN_SDK.md), [Team](docs/TEAM_SELF_HOSTING.md), [Reliability](docs/RELIABILITY.md), [Release evidence](docs/RELEASE_EVIDENCE.md), [CLI](docs/CLI_REFERENCE.md), and [Security](SECURITY.md).
+GitHub contains code, specs, CI, signed releases, and synthetic fixtures only—never user memory. Documentation: [Architecture](docs/ARCHITECTURE.md), [Plugin SDK](docs/PLUGIN_SDK.md), [Team](docs/TEAM_SELF_HOSTING.md), [Reliability](docs/RELIABILITY.md), [Release verification](docs/VERIFY_RELEASE.md), [Release evidence](docs/RELEASE_EVIDENCE.md), [CLI](docs/CLI_REFERENCE.md), and [Security](SECURITY.md).
 
 License: [MIT](LICENSE). [Version française](README.fr.md).

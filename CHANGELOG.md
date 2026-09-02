@@ -4,6 +4,12 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.15] - 2026-09-02
+
+### Security
+
+- Verify release checksum and plugin-catalog Cosign bundles with the constrained GitHub Actions identity before publishing, and document the same consumer verification procedure.
+
 ## [1.0.0-alpha.14] - 2026-09-02
 
 ### Fixed
@@ -149,7 +155,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.14...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.15...HEAD
+[1.0.0-alpha.15]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.15
 [1.0.0-alpha.14]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.14
 [1.0.0-alpha.13]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.13
 [1.0.0-alpha.12]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.12
