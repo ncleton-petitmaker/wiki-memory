@@ -448,6 +448,16 @@ class TeamPostgresTests(unittest.TestCase):
         )
         self.assertEqual(unavailable_capture.status_code, 503, unavailable_capture.text)
         self.assertEqual(unavailable_capture.json()["detail"], "Evidence storage is unavailable")
+        for method in ("get", "head"):
+            with self.subTest(method=method):
+                malformed_digest = getattr(unavailable_client, method)("/v1/blobs/not-a-sha256-digest", headers=member)
+                self.assertEqual(malformed_digest.status_code, 422, malformed_digest.text)
+                if method == "get":
+                    self.assertEqual(malformed_digest.json().get("detail"), "Blob digest must be a SHA-256 hexadecimal digest")
+        malformed_upload = unavailable_client.put(
+            "/v1/blobs/not-a-sha256-digest", headers=member, content=b"must not create a temporary upload"
+        )
+        self.assertEqual(malformed_upload.status_code, 422, malformed_upload.text)
         malformed_before_storage = unavailable_client.post(
             "/v1/captures",
             headers=member,

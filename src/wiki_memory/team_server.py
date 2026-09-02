@@ -271,6 +271,14 @@ def create_app(
             raise HTTPException(status_code=422, detail=f"{field} must be between {minimum} and {maximum}")
         return parsed
 
+    def sha256_digest(value: str) -> str:
+        """Normalize an untrusted blob-path digest before provider access."""
+
+        try:
+            return parse_reference(f"sha256:{value}")
+        except MemoryError as exc:
+            raise HTTPException(status_code=422, detail="Blob digest must be a SHA-256 hexadecimal digest") from exc
+
     def verify_object(digest: str) -> bool:
         """Verify evidence without exposing an object-store outage as a 500.
 
@@ -528,9 +536,10 @@ def create_app(
 
     @app.head("/v1/blobs/{digest}")
     def head_blob(digest: str, user: Principal = Depends(principal)) -> Response:
-        if not verify_object(digest.lower()):
+        digest = sha256_digest(digest)
+        if not verify_object(digest):
             return Response(status_code=404)
-        references = repository.events_referencing_blob(digest.lower())
+        references = repository.events_referencing_blob(digest)
         visible = any(can_read(user, scope=event.scope, space_id=event.space_id, acl=event.acl) for event in references)
         return Response(status_code=200 if visible else 404)
 
@@ -538,7 +547,7 @@ def create_app(
     async def put_blob(digest: str, request: Request, user: Principal = Depends(principal)) -> dict[str, Any]:
         if not user.has_any_role(Role.ADMIN, Role.CURATOR, Role.CONTRIBUTOR, Role.SERVICE):
             raise HTTPException(status_code=403, detail="Contributor role required for blob upload")
-        digest = digest.lower()
+        digest = sha256_digest(digest)
         hasher = hashlib.sha256()
         size = 0
         file_descriptor, temporary_name = tempfile.mkstemp(prefix="team-blob-")
@@ -636,12 +645,13 @@ def create_app(
 
     @app.get("/v1/blobs/{digest}")
     def get_blob(digest: str, user: Principal = Depends(principal)):
-        if not verify_object(digest.lower()):
+        digest = sha256_digest(digest)
+        if not verify_object(digest):
             raise HTTPException(status_code=404, detail="Blob not found")
-        references = repository.events_referencing_blob(digest.lower())
+        references = repository.events_referencing_blob(digest)
         if not any(can_read(user, scope=event.scope, space_id=event.space_id, acl=event.acl) for event in references):
             raise HTTPException(status_code=403, detail="Blob is outside authorized spaces")
-        handle = open_object(digest.lower())
+        handle = open_object(digest)
         return StreamingResponse(stream_and_close(handle), media_type="application/octet-stream")
 
     @app.post("/v1/events:append")

@@ -4,6 +4,12 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.24] - 2026-09-02
+
+### Reliability
+
+- Validate Team blob-path digests before any object-store or repository operation. Malformed paths now return a controlled `422`, while genuine provider outages remain a generic `503`.
+
 ## [1.0.0-alpha.23] - 2026-09-02
 
 ### Security
@@ -203,7 +209,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.23...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.24...HEAD
+[1.0.0-alpha.24]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.24
 [1.0.0-alpha.23]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.23
 [1.0.0-alpha.22]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.22
 [1.0.0-alpha.21]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.21
