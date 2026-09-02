@@ -139,4 +139,9 @@ jobs:
       - uses: actions/download-artifact@v8
         with: {name: release-artifacts, path: dist}
       - uses: softprops/action-gh-release@v2
-        with: {files: "dist/*", generate_release_notes: true}
+        with:
+          files: "dist/*"
+          generate_release_notes: true
+          # GitHub does not infer prerelease state from a SemVer suffix. Keep
+          # alpha/beta/rc tags visibly non-stable in the release UI.
+          prerelease: ${{ contains(github.ref_name, '-') }}
