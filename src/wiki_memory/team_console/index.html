@@ -3,14 +3,32 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Wiki Memory — Revue</title>
+  <title>Wiki Memory — Console Team</title>
   <link rel="stylesheet" href="/console/style.css">
 </head>
 <body>
-  <header><div><strong>Wiki Memory</strong><div class="meta">Console de revue Team</div></div><button id="logout">Effacer le jeton</button></header>
-  <p>Le jeton reste dans la mémoire de cet onglet et n’est jamais persisté par cette page.</p>
-  <div class="bar"><input id="token" type="password" autocomplete="off" placeholder="Jeton OIDC ou bootstrap"><button class="primary" id="load">Charger</button></div>
-  <p id="status" class="meta"></p><main id="items"></main>
+  <header class="topbar">
+    <a class="brand" href="/console" aria-label="Wiki Memory — Console Team">
+      <img src="/console/logo.svg" width="40" height="40" alt="">
+      <span><strong>Wiki Memory</strong><small>TEAM CONSOLE</small></span>
+    </a>
+    <div class="session"><span class="session-dot" aria-hidden="true"></span><span>Session locale</span><button id="logout" class="quiet">Effacer le jeton</button></div>
+  </header>
+  <main class="shell">
+    <section class="intro" aria-labelledby="page-title">
+      <div><p class="eyebrow">Espace de gouvernance</p><h1 id="page-title">Revoir ce qui devient mémoire.</h1><p class="lede">Les sources sont conservées. Les changements sensibles restent soumis à votre validation.</p></div>
+      <div class="trust-note"><span class="lock" aria-hidden="true">⌁</span><span>Le jeton reste uniquement dans cet onglet.</span></div>
+    </section>
+    <section class="access-card" aria-label="Accès à la console">
+      <label for="token">Jeton OIDC ou bootstrap</label>
+      <div class="bar"><input id="token" type="password" autocomplete="off" placeholder="Collez un jeton d’accès"><button class="primary" id="load">Ouvrir la file <span aria-hidden="true">→</span></button></div>
+      <p class="hint">Aucun jeton n’est enregistré par cette page.</p>
+    </section>
+    <section class="queue" aria-labelledby="queue-title">
+      <div class="section-heading"><div><p class="eyebrow">File de revue</p><h2 id="queue-title">Propositions en attente</h2></div><p id="status" class="meta" role="status" aria-live="polite">Connectez-vous pour charger la file.</p></div>
+      <div id="items" class="items"></div>
+    </section>
+  </main>
 <script src="/console/app.js" defer></script>
 </body>
 </html>

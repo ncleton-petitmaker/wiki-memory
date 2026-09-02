@@ -525,6 +525,11 @@ def create_app(
         content = (Path(__file__).parent / "team_console" / "style.css").read_text(encoding="utf-8")
         return PlainTextResponse(content, media_type="text/css", headers={"Cache-Control": "no-store"})
 
+    @app.get("/console/logo.svg")
+    def console_logo() -> Response:
+        content = (Path(__file__).parent / "team_console" / "logo.svg").read_text(encoding="utf-8")
+        return Response(content, media_type="image/svg+xml", headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
+
     @app.get("/console/app.js", response_class=PlainTextResponse)
     def console_script() -> PlainTextResponse:
         content = (Path(__file__).parent / "team_console" / "app.js").read_text(encoding="utf-8")
