@@ -1,3 +1,3 @@
 """Wiki Memory local-first Markdown engine."""
 
-__version__ = "1.0.0a12"
+__version__ = "1.0.0a13"

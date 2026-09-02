@@ -7,7 +7,7 @@ review remains open until that party supplies evidence.
 
 ## Reproducible, synthetic gates
 
-| Requirement | Executable evidence | Evidence status for alpha.12 |
+| Requirement | Executable evidence | Evidence status for alpha.13 |
 | --- | --- | --- |
 | Durable solo capture and QMD retrieval at 100,000 documents | `scripts/load_benchmark.py --documents 100000 --qmd --assert-targets --report …` | Passed on 2026-09-02 with QMD 2.8.3: capture p95 16.926 ms and search p95 293.296 ms. Retained report: [`local-100k-qmd-2026-09-02.json`](evidence/local-100k-qmd-2026-09-02.json). |
 | Team retrieval at one million fragments | `scripts/team_load_benchmark.py --fragments 1000000 --assert-target --report …` | Passed on 2026-09-02: search p95 3.502 ms; retained report: [`team-1m-2026-09-02.json`](evidence/team-1m-2026-09-02.json). |
@@ -30,7 +30,7 @@ The retained report bytes are bound by the
 
 ## Current gate status
 
-- `proven by alpha.12 CI`: canonical append-only ledger, content-addressed
+- `proven by alpha.13 CI`: canonical append-only ledger, content-addressed
   evidence, projections/rebuild, plugin contracts, isolated Team paths,
   ACL-before-search, crash recovery, and a synthetic WAL-recovery rehearsal.
 - `proven by retained synthetic reports`: the 100,000-document local target,
@@ -49,7 +49,7 @@ and [TEAM_SELF_HOSTING.md](TEAM_SELF_HOSTING.md) for the operator procedures.
 
 ## Stable-tag control
 
-The release workflow treats a semantic pre-release such as `v1.0.0-alpha.12`
+The release workflow treats a semantic pre-release such as `v1.0.0-alpha.13`
 as an alpha. A stable tag such as `v1.0.0` first enters the GitHub
 `stable-release` environment. Configure that environment with required
 reviewers and its three variables, each pointing to a reviewable HTTPS record:

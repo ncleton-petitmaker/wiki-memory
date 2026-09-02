@@ -49,6 +49,8 @@ Source delivery is at least once. A checkpoint is committed only after all earli
 
 Each projector owns a checkpoint and plugin version. A version change requires a rebuild; history is never rewritten. Markdown writes use a temporary file, fsync, and atomic rename. Generated file hashes are recorded in the rebuildable `.wiki-memory/projections/markdown-generated.sqlite3` state index; it uses per-file atomic upserts so a large vault never rewrites an ever-growing manifest on every capture. QMD defaults to deterministic local BM25 retrieval; model-backed query expansion/reranking is never silently downloaded or required for an everyday search.
 
+Before a projection advances, Core verifies every evidence reference on that event. Team workers apply the same rule, remove a stale stream document, and retry if an object becomes unreadable. Query paths repeat the check for event-backed results, so a blob corrupted after projection cannot remain searchable merely because an older Markdown/QMD/Team search document exists. A provider verification outage fails Team search closed; a known missing or corrupt proof is withheld and counted without exposing its content.
+
 When a generated file changes outside the projector:
 
 1. the projector stops replacing that path and writes new generated output under `projections/pending`;

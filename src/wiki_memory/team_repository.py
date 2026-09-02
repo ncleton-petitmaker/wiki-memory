@@ -251,7 +251,12 @@ class TeamRepository(ABC):
     ) -> None: ...
 
     @abstractmethod
-    def run_jobs_once(self, limit: int = 100) -> dict[str, int]: ...
+    def run_jobs_once(
+        self,
+        limit: int = 100,
+        *,
+        evidence_verify: Callable[[str], bool] | None = None,
+    ) -> dict[str, int]: ...
 
     @abstractmethod
     def operational_metrics(self) -> dict[str, float]: ...
@@ -260,7 +265,11 @@ class TeamRepository(ABC):
     def healthcheck(self) -> None: ...
 
     @abstractmethod
-    def rebuild_search_projection(self) -> dict[str, int]: ...
+    def rebuild_search_projection(
+        self,
+        *,
+        evidence_verify: Callable[[str], bool] | None = None,
+    ) -> dict[str, int]: ...
 
     @abstractmethod
     def verify_integrity(self, blob_exists: Callable[[str], bool], *, evidence_limit: int = 0) -> dict[str, Any]: ...
@@ -610,7 +619,12 @@ class PostgresTeamRepository(TeamRepository):
             if row is None:
                 raise MemoryError("Replication client fingerprint is already bound to another identity.")
 
-    def run_jobs_once(self, limit: int = 100) -> dict[str, int]:
+    def run_jobs_once(
+        self,
+        limit: int = 100,
+        *,
+        evidence_verify: Callable[[str], bool] | None = None,
+    ) -> dict[str, int]:
         completed = failed = 0
         with self._connect() as connection:
             with connection.transaction():
@@ -656,6 +670,32 @@ class PostgresTeamRepository(TeamRepository):
                             )
                             completed += 1
                             continue
+                        references = event["evidence_refs_json"]
+                        if evidence_verify is not None and not all(
+                            evidence_verify(str(reference).split(":", 1)[1])
+                            for reference in references
+                        ):
+                            # The durable event remains canonical, but a
+                            # derivative cannot outlive an unreadable proof.
+                            # Delete the current stream document before
+                            # retrying, so a prior revision cannot answer a
+                            # question while the current evidence is broken.
+                            connection.execute(
+                                "DELETE FROM search_documents WHERE stream_id=%s",
+                                (event["stream_id"],),
+                            )
+                            connection.execute(
+                                """
+                                UPDATE memory_jobs SET
+                                  status=CASE WHEN attempts>=5 THEN 'dead' ELSE 'retry' END,
+                                  available_at=now() + (interval '1 second' * LEAST(300, power(2, attempts))),
+                                  last_error='search projection withheld: evidence verification failed'
+                                WHERE id=%s
+                                """,
+                                (job["id"],),
+                            )
+                            failed += 1
+                            continue
                         if event["event_type"] in REMOVES_SEARCH_DOCUMENT:
                             connection.execute("DELETE FROM search_documents WHERE stream_id=%s", (event["stream_id"],))
                         elif event["event_type"] in ACTIVE_SEARCH_EVENT_TYPES:
@@ -699,7 +739,11 @@ class PostgresTeamRepository(TeamRepository):
                     failed += 1
         return {"claimed": len(jobs), "completed": completed, "failed": failed}
 
-    def rebuild_search_projection(self) -> dict[str, int]:
+    def rebuild_search_projection(
+        self,
+        *,
+        evidence_verify: Callable[[str], bool] | None = None,
+    ) -> dict[str, int]:
         """Atomically rebuild the Team search projection from canonical events."""
 
         with self._connect() as connection:
@@ -718,7 +762,14 @@ class PostgresTeamRepository(TeamRepository):
                     """,
                     (list(PROJECTABLE_EVENT_TYPES), list(ACTIVE_SEARCH_EVENT_TYPES)),
                 ).fetchall()
+                withheld = 0
                 for event in rows:
+                    if evidence_verify is not None and not all(
+                        evidence_verify(str(reference).split(":", 1)[1])
+                        for reference in event["evidence_refs_json"]
+                    ):
+                        withheld += 1
+                        continue
                     connection.execute(
                         """
                         INSERT INTO search_documents(
@@ -737,7 +788,7 @@ class PostgresTeamRepository(TeamRepository):
                             canonical_json(event["evidence_refs_json"]),
                         ),
                     )
-        return {"streams": len(rows), "documents": len(rows)}
+        return {"streams": len(rows), "documents": len(rows) - withheld, "withheldUnverifiableEvidence": withheld}
 
     def verify_integrity(self, blob_exists: Callable[[str], bool], *, evidence_limit: int = 0) -> dict[str, Any]:
         """Verify a restored Team ledger without returning sensitive content.

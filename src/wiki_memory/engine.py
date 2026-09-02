@@ -40,7 +40,11 @@ class MemoryEngine:
         self.evidence = EvidenceStore(durable / "blobs" / "sha256")
         self.events = EventStore(durable / "events.sqlite3", evidence_exists=self.evidence.has)
         self.bus = EventBus()
-        self.projections = ProjectionRegistry(self.root, self.events)
+        self.projections = ProjectionRegistry(
+            self.root,
+            self.events,
+            evidence_verify=self.evidence.verify,
+        )
         if markdown_projection:
             self.projections.register(MarkdownProjector())
 

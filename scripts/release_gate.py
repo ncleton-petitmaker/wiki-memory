@@ -66,7 +66,7 @@ def gate(tag: str, environment: dict[str, str] | None = None) -> tuple[bool, dic
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Enforce evidence requirements for Wiki Memory release tags")
-    parser.add_argument("--tag", required=True, help="Git tag, for example v1.0.0-alpha.12")
+    parser.add_argument("--tag", required=True, help="Git tag, for example v1.0.0-alpha.13")
     args = parser.parse_args()
     ok, report = gate(args.tag)
     print(json.dumps(report, sort_keys=True))

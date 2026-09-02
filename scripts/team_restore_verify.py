@@ -86,7 +86,7 @@ def main() -> int:
     store = object_store_from_environment()
     rebuild: dict[str, int] | None = None
     if not args.no_rebuild_search:
-        rebuild = repository.rebuild_search_projection()
+        rebuild = repository.rebuild_search_projection(evidence_verify=store.verify)
     result = repository.verify_integrity(store.verify, evidence_limit=args.evidence_sample)
     report = {
         "ok": result["ok"],

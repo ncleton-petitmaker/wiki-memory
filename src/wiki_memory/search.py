@@ -283,10 +283,24 @@ def _filter_temporal_results(
     limit: int,
 ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
     from .capture import _parse_frontmatter
+    from .evidence import EvidenceStore
     from .events import EventStore
 
     notes = list(iter_temporal_notes(root))
     event_store = EventStore(root / ".wiki-memory" / "data" / "events.sqlite3")
+    evidence_store = EvidenceStore(root / ".wiki-memory" / "data" / "blobs" / "sha256")
+
+    def evidence_is_verified(event_id: object) -> bool:
+        """Treat an event-backed result as unreadable when its proof is not sound.
+
+        Markdown and QMD are rebuildable conveniences, never an alternate
+        authority. This check also protects a query made after bit rot, before
+        an operator has had time to rebuild a projection.
+        """
+
+        event = event_store.get(str(event_id))
+        return bool(event is not None and all(evidence_store.verify(reference) for reference in event.evidence_refs))
+
     exact = {note.relative_path: note for note in notes}
     source_roots: list[Path] = []
     for entry in load_registry(root).get("vaults", []):
@@ -310,6 +324,7 @@ def _filter_temporal_results(
                 excluded.append({"file": relative, "reason": "unauthorized"})
                 continue
             is_source = False
+            source_metadata: dict[str, Any] = {}
             if candidate is not None and candidate.is_file():
                 for source_root in source_roots:
                     try:
@@ -318,10 +333,16 @@ def _filter_temporal_results(
                         break
                     except ValueError:
                         continue
+                if is_source:
+                    source_metadata, _ = _parse_frontmatter(
+                        candidate.read_text(encoding="utf-8", errors="replace")
+                    )
+                    if source_metadata.get("event_id") and not evidence_is_verified(source_metadata["event_id"]):
+                        excluded.append({"file": relative, "reason": "unverifiable-evidence"})
+                        continue
             if is_source and mode == "system" and candidate is not None:
-                metadata, _ = _parse_frontmatter(candidate.read_text(encoding="utf-8", errors="replace"))
                 try:
-                    captured_at = parse_temporal_date(metadata.get("captured_at"))
+                    captured_at = parse_temporal_date(source_metadata.get("captured_at"))
                 except ValueError:
                     captured_at = None
                 if captured_at is None or captured_at > at:
@@ -337,6 +358,9 @@ def _filter_temporal_results(
         projected_event_id = note.metadata.get("event_id")
         if projected_event_id:
             projected_event = event_store.get(str(projected_event_id))
+            if not evidence_is_verified(projected_event_id):
+                excluded.append({"file": note.relative_path, "reason": "unverifiable-evidence"})
+                continue
             latest = event_store.latest_stream_event(projected_event.stream_id) if projected_event else None
             if latest and latest.event_type in {"assertion.retracted", "assertion.superseded", "assertion.rejected"}:
                 excluded.append({"file": note.relative_path, "reason": latest.event_type})

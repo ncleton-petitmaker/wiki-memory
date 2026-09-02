@@ -4,6 +4,12 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.13] - 2026-09-02
+
+### Fixed
+
+- Block every projection checkpoint and query result when any referenced canonical evidence has become unverifiable, preventing corrupted bytes from entering or surviving in derived Markdown, local search, or Team search data.
+
 ## [1.0.0-alpha.12] - 2026-09-02
 
 ### Security
@@ -137,7 +143,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.12...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.13...HEAD
+[1.0.0-alpha.13]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.13
 [1.0.0-alpha.12]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.12
 [1.0.0-alpha.11]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.11
 [1.0.0-alpha.10]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.10

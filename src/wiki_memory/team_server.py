@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from .config import MemoryError, utc_now
+from .evidence import parse_reference
 from .events import EventActor, MemoryEvent, PluginRef, uuid7
 from .object_store import FileObjectStore, ObjectStore, S3ObjectStore, stream_and_close
 from .oidc import OIDCConfig, OIDCVerifier
@@ -284,6 +285,20 @@ def create_app(
                 )
             evidence_acls.extend(event.acl for event in candidates)
         return derive_acl([*evidence_acls, requested_acl], owner=user.id, destination_space=space_id)
+
+    def result_evidence_is_verified(result: dict[str, Any]) -> bool:
+        """Keep a derived search result behind its canonical, intact proof.
+
+        A search document is only a rebuildable projection. Checking after the
+        SQL ACL predicate preserves the no-leak boundary while preventing an
+        old projection from being presented if an object was removed or its
+        bytes no longer hash to its evidence reference.
+        """
+
+        references = result.get("evidenceRefs")
+        if not isinstance(references, list) or not all(isinstance(item, str) for item in references):
+            return False
+        return all(object_store.verify(parse_reference(reference)) for reference in references)
 
     def validate_reused_evidence_acl(user: Principal, event: MemoryEvent) -> None:
         """Prevent a known content hash from becoming an ACL bypass.
@@ -691,12 +706,25 @@ def create_app(
             groups=set(user.groups),
             all_access=user.has_any_role(Role.ADMIN),
         )
-        results = [
-            result
-            for result in candidates
-            if can_read(user, scope=result["scope"], space_id=result["spaceId"], acl=result["acl"])
-        ][:limit]
-        return {"results": results}
+        results: list[dict[str, Any]] = []
+        withheld_unverifiable_evidence = 0
+        for result in candidates:
+            if not can_read(user, scope=result["scope"], space_id=result["spaceId"], acl=result["acl"]):
+                continue
+            try:
+                evidence_verified = result_evidence_is_verified(result)
+            except Exception as exc:
+                # A transport/provider failure is operationally distinct from
+                # a known-bad blob. Do not turn it into a misleading empty
+                # search response or disclose storage-provider details.
+                raise HTTPException(status_code=503, detail="Evidence integrity verification is unavailable") from exc
+            if not evidence_verified:
+                withheld_unverifiable_evidence += 1
+                continue
+            results.append(result)
+            if len(results) >= limit:
+                break
+        return {"results": results, "withheldUnverifiableEvidence": withheld_unverifiable_evidence}
 
     @app.get("/v1/proposals")
     def proposals(cursor: int = 0, limit: int = 100, user: Principal = Depends(principal)) -> dict[str, Any]:
@@ -785,7 +813,7 @@ def create_app(
     def rebuild_search_projection(user: Principal = Depends(require_admin)) -> dict[str, Any]:
         """Recreate the derived Team search projection from the immutable ledger."""
 
-        result = repository.rebuild_search_projection()
+        result = repository.rebuild_search_projection(evidence_verify=object_store.verify)
         repository.audit(user.id, "projection.rebuild", "search", None, result)
         return {"ok": True, "rebuild": result}
 

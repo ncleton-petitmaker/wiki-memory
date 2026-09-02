@@ -238,6 +238,56 @@ class V1Tests(unittest.TestCase):
         self.assertFalse(verification["ok"])
         self.assertEqual(verification["corruptEvidence"], [evidence.reference])
 
+    def test_projection_refuses_corrupt_canonical_evidence(self) -> None:
+        engine = MemoryEngine(self.root)
+        evidence = engine.evidence.put_bytes(b"canonical projection proof", media_type="text/plain")
+        event = MemoryEvent(
+            event_type="source.captured",
+            stream_id="source:knowledge:corrupt-projection",
+            idempotency_key="corrupt-projection-proof",
+            actor=EventActor("system", "test"),
+            plugin=PluginRef("test", "1.0.0"),
+            evidence_refs=[evidence.reference],
+            payload={
+                "sourceId": "corrupt-projection",
+                "vault": "knowledge",
+                "partition": "tests",
+                "title": "Corrupt evidence must not project",
+                "body": "This must never become derived Markdown.",
+            },
+        )
+        engine.append(event, project=False)
+        blob = engine.evidence.path(evidence.reference)
+        blob.write_bytes(b"x" * blob.stat().st_size)
+
+        result = engine.projections.update("projection.markdown")
+
+        self.assertIsNotNone(result.error)
+        self.assertIn(evidence.reference, result.error or "")
+        self.assertIsNone(engine.events.projection_checkpoint("projection.markdown"))
+        self.assertFalse((self.root / "knowledge" / "01-Sources" / "items" / "tests" / "corrupt-projection.md").exists())
+
+    def test_query_withholds_existing_projection_when_its_evidence_is_corrupt(self) -> None:
+        captured = capture_item(
+            self.root,
+            "knowledge",
+            source_type="note",
+            title="Verifiable search",
+            text="needle only backed by canonical evidence",
+        )
+        engine = MemoryEngine(self.root)
+        reference = captured["evidence_refs"][0]
+        blob = engine.evidence.path(reference)
+        blob.write_bytes(b"x" * blob.stat().st_size)
+
+        result = query_memory(self.root, "needle")
+
+        self.assertEqual(result["results"], [])
+        self.assertIn(
+            "unverifiable-evidence",
+            {item["reason"] for item in result["excluded_stale_facts"]},
+        )
+
     def test_accepted_assertion_requires_evidence_at_ledger_boundary(self) -> None:
         engine = MemoryEngine(self.root)
         unsourced = MemoryEvent(

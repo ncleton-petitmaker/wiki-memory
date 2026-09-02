@@ -5,7 +5,7 @@ import json
 import signal
 import time
 
-from .team_server import repository_from_environment
+from .team_server import object_store_from_environment, repository_from_environment
 
 
 def main() -> None:
@@ -15,6 +15,7 @@ def main() -> None:
     parser.add_argument("--batch", type=int, default=100)
     args = parser.parse_args()
     repository = repository_from_environment()
+    object_store = object_store_from_environment()
     running = True
 
     def stop(*_: object) -> None:
@@ -24,7 +25,7 @@ def main() -> None:
     signal.signal(signal.SIGTERM, stop)
     signal.signal(signal.SIGINT, stop)
     while running:
-        result = repository.run_jobs_once(args.batch)
+        result = repository.run_jobs_once(args.batch, evidence_verify=object_store.verify)
         print(json.dumps(result), flush=True)
         if args.once:
             break

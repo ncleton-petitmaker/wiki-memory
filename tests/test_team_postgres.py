@@ -149,6 +149,35 @@ class TeamPostgresTests(unittest.TestCase):
         self.assertEqual(len(results), 1)
         self.assertIn("searchable synthetic", results[0]["snippet"])
 
+    def test_worker_withholds_unverifiable_evidence_before_indexing(self) -> None:
+        content = b"worker must verify evidence before projection"
+        digest = hashlib.sha256(content).hexdigest()
+        source = Path(self.temporary.name) / f"worker-proof-{self.run_id}.txt"
+        source.write_bytes(content)
+        self.object_store.put_file(digest, source, "text/plain")
+        event = MemoryEvent(
+            event_type="source.captured",
+            stream_id=f"integration:{self.run_id}:corrupt-worker-proof",
+            idempotency_key=f"integration-{self.run_id}-corrupt-worker-proof",
+            actor=EventActor("user", "member"),
+            plugin=PluginRef("integration", "1.0.0"),
+            scope="team",
+            space_id=self.space,
+            evidence_refs=[f"sha256:{digest}"],
+            acl=normalize_acl({}, owner="member", space_id=self.space),
+            payload={"body": "withheldworkerproof"},
+        )
+        self.repository.append(event)
+        self.object_store._path(digest).write_bytes(b"x" * len(content))
+
+        projected = self.repository.run_jobs_once(100, evidence_verify=self.object_store.verify)
+
+        self.assertGreaterEqual(projected["failed"], 1)
+        self.assertEqual(
+            self.repository.search("withheldworkerproof", 10, {self.space}, False),
+            [],
+        )
+
     def test_search_applies_acl_before_full_text_ranking(self) -> None:
         restricted = MemoryEvent(
             event_type="source.captured",
@@ -621,6 +650,12 @@ class TeamPostgresTests(unittest.TestCase):
         blob_path = store._path(digest)
         blob_path.write_bytes(b"x" * blob_path.stat().st_size)
         self.assertEqual(client.get(f"/v1/blobs/{digest}", headers=member).status_code, 404)
+        corrupted_search = client.post(
+            "/v1/search", headers=member, json={"query": "teamapitoken"}
+        )
+        self.assertEqual(corrupted_search.status_code, 200, corrupted_search.text)
+        self.assertEqual(corrupted_search.json()["results"], [])
+        self.assertGreater(corrupted_search.json()["withheldUnverifiableEvidence"], 0)
 
     def test_team_client_sync_stages_organization_publication_until_review(self) -> None:
         """Private → outbox → Team proposal → curator promotion is one chain."""

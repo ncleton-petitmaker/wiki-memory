@@ -11,7 +11,7 @@ import time
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from .config import MemoryError, load_vault, root_runtime_dir, safe_child
 from .events import EventStore, MemoryEvent
@@ -485,9 +485,20 @@ class ProjectionResult:
 
 
 class ProjectionRegistry:
-    def __init__(self, root: Path, events: EventStore):
+    def __init__(
+        self,
+        root: Path,
+        events: EventStore,
+        *,
+        evidence_verify: Callable[[str], bool] | None = None,
+    ):
         self.root = root.resolve()
         self.events = events
+        # Projections are derived data, but they must never launder a blob
+        # whose bytes no longer match the canonical evidence reference.  The
+        # verifier stays injected so non-file-backed projectors can reuse the
+        # registry without acquiring storage authority.
+        self._evidence_verify = evidence_verify
         self.projectors: dict[str, Projector] = {}
 
     def register(self, projector: Projector) -> None:
@@ -526,6 +537,16 @@ class ProjectionRegistry:
         end = start
         for event in self.events.iter_events(start):
             try:
+                if self._evidence_verify is not None:
+                    corrupt = [
+                        reference
+                        for reference in event.evidence_refs
+                        if not self._evidence_verify(reference)
+                    ]
+                    if corrupt:
+                        raise MemoryError(
+                            "Projection refuses unverifiable evidence: " + ", ".join(corrupt)
+                        )
                 projector.apply(self.root, event)
             except Exception as exc:
                 self.events.record_projection_failure(projection_id, int(event.position or 0), str(exc))
