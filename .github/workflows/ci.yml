@@ -135,6 +135,22 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - run: docker build --tag "$WIKI_MEMORY_IMAGE" --file deploy/team/Dockerfile .
+      - name: Reject a mutable image without the explicit test-only override
+        run: |
+          set +e
+          WIKI_MEMORY_ALLOW_UNVERIFIED_IMAGE='' docker compose \
+            --project-name wiki-memory-compose-policy-reject \
+            --file deploy/team/docker-compose.yml \
+            up --no-deps --abort-on-container-exit image-policy
+          compose_status=$?
+          set -e
+          if [ "$compose_status" -eq 0 ]; then
+            echo "image-policy accepted a mutable image reference" >&2
+            exit 1
+          fi
+          test "$(docker inspect --format '{{.State.ExitCode}}' wiki-memory-compose-policy-reject-image-policy-1)" = "78"
+          docker compose --project-name wiki-memory-compose-policy-reject \
+            --file deploy/team/docker-compose.yml down --volumes --remove-orphans
       - run: docker compose --project-name wiki-memory-compose-ci --file deploy/team/docker-compose.yml config
       - run: >-
           docker compose --project-name wiki-memory-compose-ci

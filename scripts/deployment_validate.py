@@ -53,6 +53,14 @@ def main() -> int:
         errors,
     )
     require(
+        "Reject a mutable image without the explicit test-only override" in ci_workflow
+        and "up --no-deps --abort-on-container-exit image-policy" in ci_workflow
+        and "wiki-memory-compose-policy-reject-image-policy-1" in ci_workflow
+        and '"78"' in ci_workflow,
+        "CI must execute Compose image-policy and assert its mutable-image refusal",
+        errors,
+    )
+    require(
         "compose-smoke:" in release_workflow
         and "needs: [artifacts, image, compose-smoke]" in release_workflow
         and "wiki-memory-release-compose" in release_workflow

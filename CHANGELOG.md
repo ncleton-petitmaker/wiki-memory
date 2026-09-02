@@ -4,6 +4,12 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.11] - 2026-09-02
+
+### Security
+
+- Execute the Compose image policy in CI and prove that a mutable image is rejected before the normal smoke topology starts.
+
 ## [1.0.0-alpha.10] - 2026-09-02
 
 ### Security
@@ -125,7 +131,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.10...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.11...HEAD
+[1.0.0-alpha.11]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.11
 [1.0.0-alpha.10]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.10
 [1.0.0-alpha.9]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.9
 [1.0.0-alpha.8]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.8
