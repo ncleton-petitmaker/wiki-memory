@@ -1,0 +1,93 @@
+{{- $name := include "wiki-memory.fullname" . -}}
+{{- if .Values.postgresql.internal }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: {{ $name }}-postgres}
+spec:
+  serviceName: {{ $name }}-postgres
+  replicas: 1
+  selector: {matchLabels: {app: {{ $name }}-postgres}}
+  template:
+    metadata: {labels: {app: {{ $name }}-postgres}}
+    spec:
+      securityContext: {runAsNonRoot: true, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: postgres
+          image: postgres:17.6-alpine@sha256:ef257d85f76e48da1c64832459b59fcaba1a4dac97bf5d7450c77753542eee94
+          env:
+            - {name: POSTGRES_DB, value: wiki_memory}
+            - {name: POSTGRES_USER, value: wiki_memory}
+            - name: POSTGRES_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ include "wiki-memory.secretName" . }}, key: POSTGRES_PASSWORD}}
+          ports: [{name: postgres, containerPort: 5432}]
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+          volumeMounts: [{name: data, mountPath: /var/lib/postgresql/data}]
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: {{ .Values.postgresql.storage }}}}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: {{ $name }}-postgres}
+spec: {selector: {app: {{ $name }}-postgres}, ports: [{port: 5432, targetPort: postgres}]}
+---
+{{- end }}
+{{- if .Values.objectStore.internal }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: {{ $name }}-minio}
+spec:
+  serviceName: {{ $name }}-minio
+  replicas: 1
+  selector: {matchLabels: {app: {{ $name }}-minio}}
+  template:
+    metadata: {labels: {app: {{ $name }}-minio}}
+    spec:
+      securityContext: {runAsNonRoot: true, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: minio
+          image: minio/minio:RELEASE.2025-07-23T15-54-02Z@sha256:d249d1fb6966de4d8ad26c04754b545205ff15a62e4fd19ebd0f26fa5baacbc0
+          args: [server, /data]
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom: {secretKeyRef: {name: {{ include "wiki-memory.secretName" . }}, key: MINIO_ROOT_USER}}
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ include "wiki-memory.secretName" . }}, key: MINIO_ROOT_PASSWORD}}
+          ports: [{name: s3, containerPort: 9000}]
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+          volumeMounts: [{name: data, mountPath: /data}]
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec: {accessModes: [ReadWriteOnce], resources: {requests: {storage: {{ .Values.objectStore.storage }}}}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: {{ $name }}-minio}
+spec: {selector: {app: {{ $name }}-minio}, ports: [{port: 9000, targetPort: s3}]}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $name }}-minio-init
+  annotations: {"helm.sh/hook": post-install, "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded}
+spec:
+  template:
+    metadata:
+      labels: {app: {{ $name }}-minio-init}
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: initialize
+          image: minio/mc:RELEASE.2025-07-21T05-28-08Z@sha256:fb8f773eac8ef9d6da0486d5dec2f42f219358bcb8de579d1623d518c9ebd4cc
+          command: [sh, -ec]
+          args:
+            - >-
+              until mc alias set local http://{{ $name }}-minio:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"; do sleep 2; done;
+              mc mb --ignore-existing local/{{ .Values.objectStore.bucket }};
+              mc version enable local/{{ .Values.objectStore.bucket }}
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom: {secretKeyRef: {name: {{ include "wiki-memory.secretName" . }}, key: MINIO_ROOT_USER}}
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom: {secretKeyRef: {name: {{ include "wiki-memory.secretName" . }}, key: MINIO_ROOT_PASSWORD}}
+{{- end }}

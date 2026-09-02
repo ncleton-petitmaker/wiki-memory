@@ -109,6 +109,18 @@ def configure_syncthing(
         if not ignore_path.exists():
             ignore_path.write_text(STIGNORE, encoding="utf-8")
 
+    transport = memory / ".wiki-memory" / "data"
+    transport.mkdir(parents=True, exist_ok=True)
+    transport_ignore = """// Only immutable transport artifacts cross devices
+events.sqlite3
+events.sqlite3-*
+outbox
+outbox/**
+projections
+projections/**
+"""
+    (transport / ".stignore").write_text(transport_ignore, encoding="utf-8")
+
     name = str(config.get("name") or "Wiki Memory")
     folders = {
         "agent": {
@@ -117,9 +129,9 @@ def configure_syncthing(
             "path": agent,
         },
         "memory": {
-            "id": syncthing_folder_id(memory, name),
-            "label": f"Wiki Memory — Mémoire — {name}",
-            "path": memory,
+            "id": syncthing_folder_id(transport, name),
+            "label": f"Wiki Memory — Transport — {name}",
+            "path": transport,
         },
     }
     for item in folders.values():
@@ -172,7 +184,7 @@ def configure_syncthing(
     return {
         "ok": True,
         "folder_id": str(folders["memory"]["id"]),
-        "path": str(memory),
+        "path": str(transport),
         "folders": {
             key: {"id": str(value["id"]), "path": str(value["path"])} for key, value in folders.items()
         },

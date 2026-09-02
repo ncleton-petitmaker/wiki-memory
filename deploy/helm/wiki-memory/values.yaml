@@ -1,0 +1,62 @@
+image:
+  repository: ghcr.io/ncleton-petitmaker/wiki-memory
+  tag: 1.0.0-alpha.2
+  # Required: signed GHCR release digest, for example sha256:abc... .
+  digest: ""
+  pullPolicy: IfNotPresent
+api:
+  replicas: 2
+worker:
+  replicas: 2
+service:
+  port: 8787
+oidc:
+  issuer: ""
+  audience: ""
+  jwksUrl: ""
+  groupSpaceMap: "{}"
+bootstrapToken: ""
+restoreAttestationToken: change-me-before-install
+pluginPolicy:
+  # JSON public-key map and explicit administrator allowlist for signed
+  # executable/OCI plugins. Private signing keys never enter this chart.
+  trustKeys: "{}"
+  approvedPluginIds: "[]"
+secrets:
+  # Existing Secret keys: DATABASE_URL, AWS_ACCESS_KEY_ID,
+  # AWS_SECRET_ACCESS_KEY, WIKI_MEMORY_BOOTSTRAP_TOKEN,
+  # WIKI_MEMORY_RESTORE_ATTESTATION_TOKEN, POSTGRES_PASSWORD,
+  # MINIO_ROOT_USER and MINIO_ROOT_PASSWORD.
+  existingSecret: ""
+postgresql:
+  internal: true
+  dsn: ""
+  password: change-me-before-install
+  storage: 20Gi
+objectStore:
+  internal: true
+  endpoint: ""
+  bucket: wiki-memory
+  accessKey: wiki-memory
+  secretKey: change-me-before-install
+  storage: 50Gi
+resources:
+  api: {}
+  worker: {}
+networkPolicy:
+  # Production-safe default: deny all application traffic except the peers and
+  # CIDRs explicitly supplied below. Set the addresses from your cluster and
+  # provider network plan; host names are intentionally not accepted here.
+  enabled: true
+  # Kubernetes NetworkPolicy peers permitted to reach the API on 8787. For
+  # example, the namespace/pod selector of the TLS ingress gateway.
+  apiIngress: []
+  # CIDRs of the cluster DNS service(s), usually /32 addresses.
+  dnsCIDRs: []
+  # External provider CIDRs. Internal PostgreSQL/MinIO are selected by pod
+  # labels and do not need entries here.
+  oidcCIDRs: []
+  postgresCIDRs: []
+  objectStoreCIDRs: []
+  # Optional OpenTelemetry collector CIDRs.
+  otlpCIDRs: []

@@ -1,0 +1,17 @@
+apiVersion: wiki-memory/v1
+id: parser-docling
+version: 1.0.0
+minimumSdkVersion: 1.0.0
+runtime: python
+entrypoint: wiki_memory.builtin_plugins:parser_docling
+provides: [parser.document]
+requires: [evidence]
+permissions:
+  filesystem: [selected-files, runtime]
+  network: []
+  secrets: []
+  subprocess: true
+  dataClasses: [source]
+configSchema: ../config-empty.schema.json
+healthCheck: services
+stopTimeoutSeconds: 30

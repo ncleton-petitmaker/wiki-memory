@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -54,6 +53,7 @@ def lint_memory(
     *,
     observed_at: str | None = None,
 ) -> dict[str, Any]:
+    root = root.resolve()
     errors: list[dict[str, str]] = []
     warnings: list[dict[str, str]] = []
     note_names: dict[str, list[str]] = {}
@@ -209,6 +209,17 @@ def doctor_memory(root: Path) -> dict[str, Any]:
     add("memory-config", (root / CONFIG_NAME).is_file(), CONFIG_NAME)
     add("vault-registry", (root / REGISTRY_NAME).is_file(), REGISTRY_NAME)
     try:
+        from .engine import MemoryEngine
+
+        canonical = MemoryEngine(root).verify()
+        add(
+            "canonical-ledger",
+            bool(canonical["ok"]),
+            f"{canonical['ledger']['events']} immutable events; {len(canonical['corruptEvidence'])} corrupt evidence blobs",
+        )
+    except Exception as exc:
+        add("canonical-ledger", False, str(exc))
+    try:
         _, agent_root, memory_root = validate_installation_layout(root)
         add("installation-layout", True, "sibling Agent/ and Mémoire/ directories")
     except Exception as exc:
@@ -236,6 +247,13 @@ def doctor_memory(root: Path) -> dict[str, Any]:
                 ignore_ok,
                 "contains every required exclusion" if ignore_ok else f"copy required rules from syncthing.ignore.template to {folder.name}/.stignore on this device",
             )
+        transport_ignore = memory_root / ".wiki-memory" / "data" / ".stignore"
+        transport_text = transport_ignore.read_text(encoding="utf-8") if transport_ignore.is_file() else ""
+        add(
+            "syncthing-transport",
+            "events.sqlite3" in transport_text and "outbox/**" in transport_text,
+            "only immutable blobs and event packs are synchronized",
+        )
         folder_ids = sync.get("folder_ids") or {}
         add(
             "syncthing-folders",
@@ -246,6 +264,7 @@ def doctor_memory(root: Path) -> dict[str, Any]:
         add("syncthing-ignore:agent", True, "multi-device synchronization is disabled")
         add("syncthing-ignore:memory", True, "multi-device synchronization is disabled")
         add("syncthing-folders", True, "multi-device synchronization is disabled")
+        add("syncthing-transport", True, "multi-device synchronization is disabled")
     versioning = bool(sync.get("versioning_confirmed", False))
     backup_detail = (
         "Syncthing is not a backup; confirm versioning or a separate backup."
@@ -284,8 +303,15 @@ def scan_privacy(path: Path) -> dict[str, Any]:
         "browser-cookie": re.compile(r"(?i)(?:sessionid|auth_token|li_at)\s*[:=]\s*['\"]?[^\s'\"]{12,}"),
     }
     excluded = {".git", "node_modules", ".venv", "venv", "__pycache__"}
+
+    def is_generated_runtime_path(file: Path) -> bool:
+        # Virtual environments and temporary wheel smoke environments embed
+        # their absolute creation path by design. They are ignored by Git and
+        # must not turn a source-tree privacy check into a false positive.
+        return any(part.startswith((".venv", ".build-")) for part in file.parts)
+
     for file in path.rglob("*"):
-        if not file.is_file() or any(part in excluded for part in file.parts):
+        if not file.is_file() or any(part in excluded for part in file.parts) or is_generated_runtime_path(file):
             continue
         if file.suffix.lower() in {".png", ".jpg", ".jpeg", ".gif", ".pdf", ".zip", ".sqlite"}:
             continue

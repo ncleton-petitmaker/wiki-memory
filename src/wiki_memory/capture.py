@@ -2,20 +2,19 @@ from __future__ import annotations
 
 import json
 import re
-import shutil
 import subprocess
 import tempfile
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
 
 from .config import MemoryError, content_hash, load_vault, platform_runtime_dir, slugify, utc_now
+from .engine import MemoryEngine
+from .events import EventActor, MemoryEvent, PluginRef
 from .temporal import temporal_defaults_from_source, temporal_open_questions
 
 
 TRACKING_KEYS = {"fbclid", "gclid", "mc_cid", "mc_eid", "ref", "ref_src"}
-ALLOWED_CONNECTORS = {"instagram", "linkedin", "reddit", "x", "youtube", "karakeep", "web", "manual"}
 EPISTEMIC_STATUSES = {"fact", "inference", "open_question", "unverified"}
 SOCIAL_CONNECTORS = {"instagram", "linkedin", "reddit", "x", "youtube"}
 
@@ -144,11 +143,29 @@ def capture_item(
     media: list[str] | None = None,
     raw_payload: dict[str, Any] | None = None,
     use_docling: bool = False,
+    scope: str = "private",
+    space_id: str = "local-owner",
+    actor_id: str = "local-owner",
 ) -> dict[str, Any]:
     root = root.resolve()
-    vault_path, vault = load_vault(root, vault_slug)
-    if connector not in ALLOWED_CONNECTORS:
-        raise MemoryError(f"Unsupported connector: {connector}")
+    _, destination_vault = load_vault(root, vault_slug)  # validate before preserving data
+    team_vault = dict(destination_vault.get("team") or {})
+    if team_vault.get("read_only"):
+        raise MemoryError(f"Shared vault {vault_slug} is read-only because Team is detached.")
+    if scope == "private" and team_vault.get("managed"):
+        raise MemoryError("Private captures cannot target a Team-managed vault.")
+    if scope != "private":
+        from .team import shared_vault_slug
+
+        expected_vault = shared_vault_slug(space_id)
+        if (
+            vault_slug != expected_vault
+            or not team_vault.get("managed")
+            or team_vault.get("space_id") != space_id
+        ):
+            raise MemoryError(f"Shared captures for {space_id} must target the isolated vault {expected_vault}.")
+    if not re.fullmatch(r"[a-z0-9]+(?:[.-][a-z0-9]+)*", connector):
+        raise MemoryError(f"Invalid connector id: {connector}")
     if epistemic_status not in EPISTEMIC_STATUSES:
         raise MemoryError(f"Unsupported epistemic status: {epistemic_status}")
     if source_url:
@@ -163,38 +180,26 @@ def capture_item(
     else:
         raise MemoryError("Provide a URL, file, or text source.")
 
-    folders = vault["folders"]
-    source_root = vault_path / folders["sources"]
     item_id = _stable_id(origin)
-    item_root = source_root / "items"
-    existing_items = list(item_root.rglob(f"{item_id}.md"))
-    if len(existing_items) > 1:
-        raise MemoryError(f"Multiple source notes share id {item_id}; run Wiki Memory Doctor.")
     partition = _social_partition(connector, collection)
-    item_path = existing_items[0] if existing_items else item_root / partition / f"{item_id}.md"
-    item_path.parent.mkdir(parents=True, exist_ok=True)
-    item_partition = item_path.relative_to(item_root).parent
-    raw_dir = source_root / "raw" / item_partition / item_id
-    raw_dir.mkdir(parents=True, exist_ok=True)
-    copied_media: list[str] = []
+    engine = MemoryEngine(root)
+    evidence_refs: list[str] = []
+    media_refs: list[str] = []
 
     if source_file:
-        raw_bytes = source_file.read_bytes()
-        payload_hash = content_hash(raw_bytes)
-        raw_target = raw_dir / f"{payload_hash[:12]}-{source_file.name}"
-        if not raw_target.exists():
-            shutil.copy2(source_file, raw_target)
+        evidence = engine.evidence.put_file(source_file)
+        evidence_refs.append(evidence.reference)
+        payload_hash = evidence.sha256
         if use_docling:
             with tempfile.TemporaryDirectory() as temp_dir:
                 converted = Path(temp_dir) / "converted.md"
-                body = _docling_convert(str(raw_target), converted, root)
+                body = _docling_convert(str(engine.evidence.path(evidence.reference)), converted, root)
         else:
             try:
-                body = raw_bytes.decode("utf-8")
+                body = engine.evidence.path(evidence.reference).read_text(encoding="utf-8")
             except UnicodeDecodeError:
-                preserved = raw_target.relative_to(vault_path).as_posix()
-                body = f"Binary source preserved at `{preserved}`."
-        raw_reference = raw_target.relative_to(vault_path).as_posix()
+                body = f"Binary evidence preserved as `{evidence.reference}`."
+        raw_reference = evidence.reference
     elif source_url:
         if text is None and use_docling:
             with tempfile.TemporaryDirectory() as temp_dir:
@@ -210,48 +215,40 @@ def capture_item(
             "text": body,
         }
         payload_bytes = json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
-        payload_hash = content_hash(payload_bytes)
-        raw_target = raw_dir / f"{payload_hash[:12]}.json"
-        if not raw_target.exists():
-            raw_target.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-        raw_reference = raw_target.relative_to(vault_path).as_posix()
+        evidence = engine.evidence.put_bytes(
+            payload_bytes,
+            media_type="application/json",
+            original_name=f"{item_id}.json",
+        )
+        payload_hash = evidence.sha256
+        raw_reference = evidence.reference
+        evidence_refs.append(evidence.reference)
     else:
         body = text or ""
-        payload_hash = content_hash(body.encode("utf-8"))
-        raw_target = raw_dir / f"{payload_hash[:12]}.txt"
-        if not raw_target.exists():
-            raw_target.write_text(body, encoding="utf-8")
-        raw_reference = raw_target.relative_to(vault_path).as_posix()
+        evidence = engine.evidence.put_bytes(
+            body.encode("utf-8"),
+            media_type="text/plain; charset=utf-8",
+            original_name=f"{item_id}.txt",
+        )
+        payload_hash = evidence.sha256
+        raw_reference = evidence.reference
+        evidence_refs.append(evidence.reference)
 
     for item in media or []:
         candidate = Path(item).expanduser().resolve()
         if candidate.is_file():
-            media_hash = content_hash(candidate.read_bytes())[:12]
-            target = vault_path / folders["assets"] / item_partition / f"{item_id}-{media_hash}-{candidate.name}"
-            target.parent.mkdir(parents=True, exist_ok=True)
-            if not target.exists():
-                shutil.copy2(candidate, target)
-            copied_media.append(target.relative_to(vault_path).as_posix())
+            media_evidence = engine.evidence.put_file(candidate)
+            evidence_refs.append(media_evidence.reference)
+            media_refs.append(media_evidence.reference)
 
-    revision = 1
-    if item_path.exists():
-        previous_text = item_path.read_text(encoding="utf-8")
-        previous, _ = _parse_frontmatter(previous_text)
-        if previous.get("content_hash") == payload_hash:
-            return {
-                "status": "duplicate",
-                "id": item_id,
-                "path": str(item_path),
-                "fact_temporal_defaults": temporal_defaults_from_source(previous),
-                "open_questions": temporal_open_questions(previous),
-            }
-        revision = int(previous.get("revision", 1)) + 1
-        stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-        revision_path = source_root / "revisions" / item_partition / item_id / f"{stamp}.md"
-        revision_path.parent.mkdir(parents=True, exist_ok=True)
-        revision_path.write_text(previous_text, encoding="utf-8")
-
-    captured_at = utc_now()
+    stream_id = f"source:{vault_slug}:{item_id}"
+    idempotency_key = f"capture:{stream_id}:{payload_hash}"
+    existing_idempotent = engine.events.get_by_idempotency_key(idempotency_key)
+    captured_at = (
+        str((existing_idempotent.payload.get("metadata") or {}).get("captured_at") or existing_idempotent.recorded_at)
+        if existing_idempotent
+        else utc_now()
+    )
     metadata = {
         "id": item_id,
         "source_type": source_type,
@@ -265,20 +262,52 @@ def capture_item(
         "content_hash": payload_hash,
         "vault": vault_slug,
         "epistemic_status": epistemic_status,
-        "revision": revision,
         "raw": raw_reference,
-        "media": copied_media,
+        "media": media_refs,
     }
     heading = title or (source_file.stem if source_file else origin)
-    rendered = _frontmatter(metadata) + f"\n\n# {heading}\n\n{body.strip()}\n"
-    item_path.write_text(rendered, encoding="utf-8")
+    current_version = engine.events.stream_version(stream_id)
+    from .team import normalize_acl
+
+    event = MemoryEvent(
+        event_type=(
+            existing_idempotent.event_type
+            if existing_idempotent is not None
+            else ("source.captured" if current_version == 0 else "source.revised")
+        ),
+        stream_id=stream_id,
+        idempotency_key=idempotency_key,
+        actor=EventActor(type="user" if connector == "manual" else "connector", id=actor_id if connector == "manual" else connector),
+        plugin=PluginRef(id=f"source.{connector}", version="1.0.0"),
+        scope=scope,  # type: ignore[arg-type]
+        space_id=space_id,
+        occurred_at=published_at,
+        recorded_at=captured_at,
+        evidence_refs=evidence_refs,
+        acl=normalize_acl({}, owner=actor_id, space_id=space_id),
+        payload={
+            "sourceId": item_id,
+            "vault": vault_slug,
+            "partition": partition.as_posix() if str(partition) else "",
+            "title": heading,
+            "body": body.strip(),
+            "metadata": metadata,
+        },
+    )
+    persisted, created = engine.append(event, expected_stream_version=current_version)
+    vault_path, vault = load_vault(root, vault_slug)
+    item_path = vault_path / vault["folders"]["sources"] / "items" / partition / f"{item_id}.md"
+    projected_metadata = dict(metadata)
+    projected_metadata["recorded_at"] = persisted.recorded_at
     return {
-        "status": "captured" if revision == 1 else "revised",
+        "status": ("captured" if persisted.stream_version == 1 else "revised") if created else "duplicate",
         "id": item_id,
-        "revision": revision,
+        "event_id": persisted.event_id,
+        "revision": persisted.stream_version,
         "path": str(item_path),
-        "fact_temporal_defaults": temporal_defaults_from_source(metadata, recorded_at=captured_at),
-        "open_questions": temporal_open_questions(metadata),
+        "evidence_refs": persisted.evidence_refs,
+        "fact_temporal_defaults": temporal_defaults_from_source(projected_metadata, recorded_at=persisted.recorded_at),
+        "open_questions": temporal_open_questions(projected_metadata),
     }
 
 

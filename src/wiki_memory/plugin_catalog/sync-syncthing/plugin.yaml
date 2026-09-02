@@ -1,0 +1,17 @@
+apiVersion: wiki-memory/v1
+id: sync-syncthing
+version: 1.0.0
+minimumSdkVersion: 1.0.0
+runtime: python
+entrypoint: wiki_memory.builtin_plugins:sync_syncthing
+provides: [sync]
+requires: [events, evidence]
+permissions:
+  filesystem: [memory-root, exports]
+  network: [syncthing-peers]
+  secrets: []
+  subprocess: true
+  dataClasses: [memory]
+configSchema: ../config-empty.schema.json
+healthCheck: services
+stopTimeoutSeconds: 60

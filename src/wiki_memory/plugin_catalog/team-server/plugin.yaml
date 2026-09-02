@@ -1,0 +1,30 @@
+apiVersion: wiki-memory/v1
+id: team-server
+version: 1.0.0
+minimumSdkVersion: 1.0.0
+runtime: python
+entrypoint: wiki_memory.builtin_plugins:team_server
+provides:
+  - team-server
+  - identity.oidc
+  - spaces.shared
+  - authorization
+  - review
+  - audit
+  - team-search
+  - team-console
+requires: []
+permissions:
+  filesystem: [runtime, team-console]
+  network: [configured-oidc, configured-postgres, configured-object-store]
+  secrets:
+    - DATABASE_URL
+    - DATABASE_PASSWORD
+    - AWS_ACCESS_KEY_ID
+    - AWS_SECRET_ACCESS_KEY
+    - WIKI_MEMORY_BOOTSTRAP_TOKEN
+    - WIKI_MEMORY_RESTORE_ATTESTATION_TOKEN
+  dataClasses: [memory, identity, audit]
+configSchema: ../config-empty.schema.json
+healthCheck: services
+stopTimeoutSeconds: 60

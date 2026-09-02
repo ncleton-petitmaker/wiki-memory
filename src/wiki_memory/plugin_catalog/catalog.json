@@ -1,0 +1,83 @@
+{
+  "format": "wiki-memory-plugin-catalog/v1",
+  "plugins": [
+    {
+      "id": "backup-local",
+      "manifest": "backup-local/plugin.yaml",
+      "sha256": "4bf3cf876aec10186afa71979a4e7988966b6bab3681718992fe1763e6b88961",
+      "version": "1.0.0"
+    },
+    {
+      "id": "gateway-mcp",
+      "manifest": "gateway-mcp/plugin.yaml",
+      "sha256": "5c094a880c5dc388574cf79df20e438bb957b314c0f6094cd9b9930028497871",
+      "version": "1.0.0"
+    },
+    {
+      "id": "parser-docling",
+      "manifest": "parser-docling/plugin.yaml",
+      "sha256": "47948f070b73f6a60637e52d37cfca8360a400643f0ee6ef7c57426f872b7511",
+      "version": "1.0.0"
+    },
+    {
+      "id": "projection-markdown",
+      "manifest": "projection-markdown/plugin.yaml",
+      "sha256": "39d21a1febd1661ef95dc7892558a7dd6b7bd61b057f0267c428be23213924b5",
+      "version": "1.0.0"
+    },
+    {
+      "id": "search-qmd",
+      "manifest": "search-qmd/plugin.yaml",
+      "sha256": "7f86138d5cf81e7ddb83cc9c097ae5d91f864d0bc4762f6f9539a584e63ea44f",
+      "version": "1.0.0"
+    },
+    {
+      "id": "source-audio",
+      "manifest": "source-audio/plugin.yaml",
+      "sha256": "e7c4573c98d6144f81f74d7720f59de406b11a1e225c7adb50066f1dc9cee757",
+      "version": "1.0.0"
+    },
+    {
+      "id": "source-postgres",
+      "manifest": "source-postgres/plugin.yaml",
+      "sha256": "e81ec7eb4c619fc252b034a9282e71909861ea05e160d56b0e8e3d8f6e5741cb",
+      "version": "1.0.0"
+    },
+    {
+      "id": "source-social-browser",
+      "manifest": "source-social-browser/plugin.yaml",
+      "sha256": "6d9912b897050d27123baffcef42b68815d462cc175b5eda830e2991d4367116",
+      "version": "1.0.0"
+    },
+    {
+      "id": "sync-syncthing",
+      "manifest": "sync-syncthing/plugin.yaml",
+      "sha256": "38f56907c83b411032b09bf7a069502b0d0a881255479defcbd63f767cc6b95e",
+      "version": "1.0.0"
+    },
+    {
+      "id": "team-client",
+      "manifest": "team-client/plugin.yaml",
+      "sha256": "b8600162bf6b68fd1247589748f6fc033a380be36598b3e8c18521525eaaa430",
+      "version": "1.0.0"
+    },
+    {
+      "id": "team-server",
+      "manifest": "team-server/plugin.yaml",
+      "sha256": "2e55fab0f16a834cb0239869f78e08ede8fdd538afe67be857eee81ae6fdb2dc",
+      "version": "1.0.0"
+    },
+    {
+      "id": "transcriber-local",
+      "manifest": "transcriber-local/plugin.yaml",
+      "sha256": "d933a90a63119a73df2cadbe2f7065f2363667c5e87cd7f812f86dc5f13ac2da",
+      "version": "1.0.0"
+    },
+    {
+      "id": "transcriber-mistral",
+      "manifest": "transcriber-mistral/plugin.yaml",
+      "sha256": "c57155910b78f93177a8830e23f9d8269f22188abbeef88b36b00009c2e7c70f",
+      "version": "1.0.0"
+    }
+  ]
+}

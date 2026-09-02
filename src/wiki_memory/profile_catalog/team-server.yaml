@@ -1,0 +1,10 @@
+apiVersion: wiki-memory/v1
+id: team-server
+requireSignatures: true
+trustedPlugins:
+  - team-server
+  - source-audio
+  - source-postgres
+plugins:
+  - team-server
+

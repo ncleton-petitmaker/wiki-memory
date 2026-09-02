@@ -69,7 +69,7 @@ Other explicit stop states are `verification-required`, `rate-limited`, `layout-
 
 ## `.stignore` is reported as different
 
-This check applies only when synchronization is enabled. Syncthing does not synchronize `.stignore`. In both sibling folders, `Agent/` and `Mémoire/`, compare the local file with `syncthing.ignore.template`, preserve any intentional device-specific additions, and rerun Doctor against `Mémoire/`.
+This check applies only when synchronization is enabled. Syncthing does not synchronize `.stignore`. Preserve the local rules in `Agent/`, `Mémoire/`, and especially `Mémoire/.wiki-memory/data/`; the transport rules must exclude `events.sqlite3`, its WAL/SHM files, and `outbox/**`. Rerun Doctor against `Mémoire/`.
 
 ## A file was deleted on another device
 

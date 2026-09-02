@@ -1,8 +1,8 @@
 # Wiki Memory architecture contract
 
-Markdown is the source of truth. QMD indexes, embeddings, converted caches, browser state, and logs are reproducible local state and never belong in a vault.
+The append-only event ledger and content-addressed original evidence are the source of truth. Markdown is a readable and editable projection. QMD indexes, embeddings, converted caches, browser state, and logs are reproducible local state; credentials and runtime caches never belong in a memory root.
 
-Each installation root contains two sibling directories: `Agent/` for the public plugin and `Mémoire/` for personal knowledge. The memory root is always `Mémoire/`; it contains `memory.config.yaml`, `vaults.registry.yaml`, `AGENTS.md`, and one directory per independent vault. When the user enables Syncthing, both `Agent/` and `Mémoire/` are configured as separate folders and each contains `.stignore` plus `syncthing.ignore.template`. Each vault declares localized folder names in `vault.yaml`; always resolve roles through that mapping.
+Each installation root contains two sibling directories: `Agent/` for the public plugin and `Mémoire/` for personal knowledge. The memory root is always `Mémoire/`; it contains `memory.config.yaml`, `vaults.registry.yaml`, `AGENTS.md`, and independent vaults. When enabled, Syncthing shares `Agent/` and the immutable transport directory `Mémoire/.wiki-memory/data/`; transport ignore rules exclude SQLite and outbox state. Each vault declares localized folder names in `vault.yaml`; always resolve roles through that mapping.
 
 Logical roles:
 

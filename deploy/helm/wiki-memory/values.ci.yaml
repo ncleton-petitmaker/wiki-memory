@@ -1,0 +1,28 @@
+# Non-deployable CI fixture. It supplies every fail-closed input so Helm can
+# render the chart without weakening the production defaults in values.yaml.
+image:
+  repository: ghcr.io/example/wiki-memory
+  digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+oidc:
+  issuer: https://identity.example.test
+  audience: wiki-memory-ci
+secrets:
+  existingSecret: wiki-memory-ci-secrets
+postgresql:
+  internal: false
+  dsn: postgresql://wiki_memory:synthetic@198.51.100.16:5432/wiki_memory
+objectStore:
+  internal: false
+  endpoint: https://objects.example.test
+  bucket: wiki-memory-ci
+networkPolicy:
+  apiIngress:
+    - namespaceSelector:
+        matchLabels: {kubernetes.io/metadata.name: ingress-system}
+      podSelector:
+        matchLabels: {app.kubernetes.io/name: ingress-gateway}
+  dnsCIDRs: [10.96.0.10/32]
+  oidcCIDRs: [203.0.113.20/32]
+  postgresCIDRs: [198.51.100.16/28]
+  objectStoreCIDRs: [198.51.100.64/28]
+  otlpCIDRs: [10.42.8.14/32]

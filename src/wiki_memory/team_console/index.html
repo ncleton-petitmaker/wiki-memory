@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Wiki Memory — Revue</title>
+  <link rel="stylesheet" href="/console/style.css">
+</head>
+<body>
+  <header><div><strong>Wiki Memory</strong><div class="meta">Console de revue Team</div></div><button id="logout">Effacer le jeton</button></header>
+  <p>Le jeton reste dans la mémoire de cet onglet et n’est jamais persisté par cette page.</p>
+  <div class="bar"><input id="token" type="password" autocomplete="off" placeholder="Jeton OIDC ou bootstrap"><button class="primary" id="load">Charger</button></div>
+  <p id="status" class="meta"></p><main id="items"></main>
+<script src="/console/app.js" defer></script>
+</body>
+</html>

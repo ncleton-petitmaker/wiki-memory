@@ -1,0 +1,16 @@
+apiVersion: wiki-memory/v1
+id: source-postgres
+version: 1.0.0
+minimumSdkVersion: 1.0.0
+runtime: python
+entrypoint: wiki_memory.builtin_plugins:source_postgres
+provides: [source.postgres]
+requires: [events, evidence, projection.markdown]
+permissions:
+  filesystem: [memory-root, runtime]
+  network: [configured-postgres]
+  secrets: [POSTGRES_DSN]
+  dataClasses: [database, memory]
+configSchema: config.schema.json
+healthCheck: services
+stopTimeoutSeconds: 60

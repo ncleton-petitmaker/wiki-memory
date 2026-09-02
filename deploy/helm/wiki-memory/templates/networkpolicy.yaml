@@ -1,0 +1,98 @@
+{{- if .Values.networkPolicy.enabled }}
+{{- $name := include "wiki-memory.fullname" . -}}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: {{ $name }}-application-default-deny}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name }}
+  policyTypes: [Ingress, Egress]
+  ingress: []
+  egress: []
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: {{ $name }}-api-ingress}
+spec:
+  podSelector:
+    matchLabels: {app.kubernetes.io/name: {{ $name }}, app.kubernetes.io/component: api}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+{{ toYaml .Values.networkPolicy.apiIngress | nindent 8 }}
+      ports: [{protocol: TCP, port: 8787}]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: {{ $name }}-application-egress}
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: {{ $name }}
+  policyTypes: [Egress]
+  egress:
+{{- range $cidr := .Values.networkPolicy.dnsCIDRs }}
+    - to: [{ipBlock: {cidr: {{ $cidr | quote }}}}]
+      ports: [{protocol: UDP, port: 53}, {protocol: TCP, port: 53}]
+{{- end }}
+{{- if .Values.postgresql.internal }}
+    - to: [{podSelector: {matchLabels: {app: {{ $name }}-postgres}}}]
+      ports: [{protocol: TCP, port: 5432}]
+{{- else }}
+{{- range $cidr := .Values.networkPolicy.postgresCIDRs }}
+    - to: [{ipBlock: {cidr: {{ $cidr | quote }}}}]
+      ports: [{protocol: TCP, port: 5432}]
+{{- end }}
+{{- end }}
+{{- if .Values.objectStore.internal }}
+    - to: [{podSelector: {matchLabels: {app: {{ $name }}-minio}}}]
+      ports: [{protocol: TCP, port: 9000}]
+{{- else }}
+{{- range $cidr := .Values.networkPolicy.objectStoreCIDRs }}
+    - to: [{ipBlock: {cidr: {{ $cidr | quote }}}}]
+      ports: [{protocol: TCP, port: 443}]
+{{- end }}
+{{- end }}
+{{- range $cidr := .Values.networkPolicy.oidcCIDRs }}
+    - to: [{ipBlock: {cidr: {{ $cidr | quote }}}}]
+      ports: [{protocol: TCP, port: 443}]
+{{- end }}
+{{- range $cidr := .Values.networkPolicy.otlpCIDRs }}
+    - to: [{ipBlock: {cidr: {{ $cidr | quote }}}}]
+      ports: [{protocol: TCP, port: 4317}, {protocol: TCP, port: 4318}]
+{{- end }}
+{{- if .Values.postgresql.internal }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: {{ $name }}-postgres-ingress}
+spec:
+  podSelector: {matchLabels: {app: {{ $name }}-postgres}}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ $name }}
+      ports: [{protocol: TCP, port: 5432}]
+{{- end }}
+{{- if .Values.objectStore.internal }}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: {{ $name }}-minio-ingress}
+spec:
+  podSelector: {matchLabels: {app: {{ $name }}-minio}}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: {{ $name }}
+        - podSelector:
+            matchLabels:
+              app: {{ $name }}-minio-init
+      ports: [{protocol: TCP, port: 9000}]
+{{- end }}
+{{- end }}

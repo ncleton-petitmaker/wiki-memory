@@ -1,157 +1,139 @@
-<p align="center">
-  <img src="assets/wiki-memory-hero.svg" alt="Wiki Memory — votre savoir, structuré, sourcé et réellement à vous." width="100%">
-</p>
+# Wiki Memory
 
-<p align="center">
-  <a href="https://github.com/ncleton-petitmaker/wiki-memory/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ncleton-petitmaker/wiki-memory/actions/workflows/ci.yml/badge.svg"></a>
-  <a href="https://github.com/ncleton-petitmaker/wiki-memory/releases"><img alt="Version" src="https://img.shields.io/github/v/release/ncleton-petitmaker/wiki-memory?display_name=tag&sort=semver"></a>
-  <a href="LICENSE"><img alt="Licence MIT" src="https://img.shields.io/badge/licence-MIT-7cf7c2"></a>
-  <img alt="macOS, Linux, Windows" src="https://img.shields.io/badge/plateformes-macOS%20%7C%20Linux%20%7C%20Windows-c4b5fd">
-</p>
+Wiki Memory est un moteur de mémoire MIT, local-first, self-hosted et extensible par plugins. Il fonctionne seul, hors ligne, sans compte. Le bundle optionnel `team` ajoute OIDC, espaces partagés, ACL, revue, audit et réplication ; il n’est jamais une dépendance du mode solo.
 
-<p align="center">
-  Un plugin Codex local-first qui transforme vos sources en mémoire Markdown durable et interrogeable.<br>
-  Compatible <a href="https://obsidian.md/">Obsidian</a>, synchronisable avec <a href="https://syncthing.net/">Syncthing</a> et toujours relié aux sources originales.
-</p>
+Version actuelle : `1.0.0-alpha.2`. La fondation V1 est exécutable, mais le tag stable `1.0.0` reste conditionné à des preuves de restauration sur l’infrastructure de production et à un audit externe. Les preuves locales exactes sont consignées dans [Évidence de release](docs/RELEASE_EVIDENCE.md).
 
-<p align="center">
-  <a href="#installation-en-deux-commandes"><strong>Installer</strong></a> ·
-  <a href="docs/GETTING_STARTED.md">Premiers pas</a> ·
-  <a href="docs/ARCHITECTURE.md">Architecture</a> ·
-  <a href="docs/CLI_REFERENCE.md">CLI</a> ·
-  <a href="README.md">English</a>
-</p>
+## Ce qui est canonique
 
----
+```text
+source → blob SHA-256 durable → événement SQLite append-only → projections
+                                                     ├─ Markdown / Obsidian
+                                                     ├─ recherche QMD
+                                                     └─ faits et synthèses
+```
 
-## Pourquoi Wiki Memory ?
+Les preuves originales et le journal sont la vérité. Markdown reste lisible et modifiable, mais c’est une projection reconstruisible. Une édition manuelle est détectée par hash, conservée comme preuve et proposée à la revue ; elle n’est jamais écrasée silencieusement.
 
-La couche durable reste volontairement simple : des dossiers, du Markdown, du frontmatter YAML, des wikiliens et les fichiers originaux. La mémoire reste lisible même sans Wiki Memory.
+Chaque événement conserve l’acteur, les deux dates (`occurredAt` et `recordedAt`), la version de flux, la clé d’idempotence, le plugin et sa version exacte, les preuves SHA-256, la portée et l’ACL. Une preuve est fsyncée avant l’événement qui la référence. Une clé d’idempotence réutilisée avec un autre contenu est refusée.
 
-| Principe | Conséquence concrète |
-| --- | --- |
-| **Local-first** | Les notes, sources, médias et configurations restent dans des dossiers que vous contrôlez. |
-| **Sourcé** | Les captures immuables sont séparées du wiki vivant et des synthèses éditables. |
-| **Adaptable** | L'onboarding construit les vaults et la taxonomie depuis vos besoins, sans imposer de mémoire client. |
-| **Interrogeable** | QMD fournit une recherche exacte, sémantique et hybride entièrement locale. |
-| **Portable** | Chaque vault s'ouvre dans Obsidian et la mémoire complète peut être répliquée avec Syncthing. |
-| **Auditable** | Chaque fait peut conserver sa source, ses dates réelles, ses dates de mémoire et son historique de remplacement. |
-
-## Installation en deux commandes
+## Démarrage solo
 
 ```bash
-codex plugin marketplace add ncleton-petitmaker/wiki-memory
-codex plugin add wiki-memory@petitmaker
+python -m pip install -e .
+wiki-memory init ./Mémoire --spec ./onboarding.json
+wiki-memory profile-doctor ./Mémoire --profile solo
+wiki-memory capture ./Mémoire --vault knowledge --text "Décision sourcée"
+wiki-memory query ./Mémoire "quelle décision ?"
+wiki-memory verify ./Mémoire
 ```
 
-Redémarrez l'application ChatGPT ou ouvrez Wiki Memory dans une nouvelle tâche Codex. Il est immédiatement utilisable : aucune commande, aucun nom de compétence et aucune phrase technique ne sont à recopier.
+Le profil solo active Core, la projection Markdown, QMD, Docling, le connecteur social, MCP, les packs Syncthing et la sauvegarde locale. L’API HTTP locale refuse toute écoute hors loopback et utilise le trousseau système, avec un fichier `0600` hors mémoire en fallback.
 
-Au premier lancement, Wiki Memory s'adresse directement à vous en français :
+## Plugins
 
-> Veux-tu démarrer un échange pour que je comprenne mieux tes activités, que je puisse mieux t'aider et que nous structurions ta mémoire ensemble ?
-
-Après votre accord, l'onboarding effectue son diagnostic en lecture seule en arrière-plan. Il ne montre les détails techniques que si une autorisation ou une action de votre part est nécessaire. Il installe ou vérifie alors Python, Node.js, Obsidian, Docling et QMD. Syncthing n'est proposé et installé que si vous souhaitez synchroniser la mémoire avec un autre appareil.
-
-## Ce que fait l'onboarding
-
-```mermaid
-flowchart LR
-    A[Diagnostic des dépendances] --> B{Élément manquant ?}
-    B -- Oui --> C[Autorisation unique]
-    C --> D[Installation guidée]
-    D --> E[Nouvelle vérification]
-    B -- Non --> E
-    E --> S{Synchroniser plusieurs appareils ?}
-    S -- Non --> F[Entretien adaptatif]
-    S -- Oui --> T[Explication + configuration Syncthing]
-    T --> F
-    F --> G[Proposition de vaults]
-    G --> H{Validation ?}
-    H -- Ajuster --> F
-    H -- Oui --> I[Création de la mémoire]
-    I --> J[Doctor + ouverture Obsidian]
-```
-
-Une fois l'installation vérifiée, Wiki Memory demande si vous avez déjà une organisation en tête ou si vous préférez une première proposition fondée sur ce que ChatGPT sait réellement de vous. Cette proposition distingue les faits disponibles, les hypothèses et les informations manquantes.
-
-Il demande aussi si vous souhaitez synchroniser l'installation sur un autre appareil. Cette option est facultative. L'installation possède toujours deux dossiers frères à sa racine : `Agent/` pour l'agent et `Mémoire/` pour vos contenus. Si vous activez Syncthing, l'agent explique son fonctionnement, l'installe avec votre accord, configure ces deux dossiers comme deux partages distincts et vous accompagne jusqu'à leur acceptation sur l'autre appareil.
-
-Les questions portent ensuite sur les objectifs, sources, audiences, frontières confidentielles, livrables, vocabulaire, réseaux sociaux, fréquence de capture, médias, appareils et sauvegardes. Un nouveau vault n'est proposé que si l'objectif, l'audience, le cycle de vie ou la confidentialité le justifient.
-
-## Fonctionnalités
-
-| Domaine | Comportement |
-| --- | --- |
-| **Onboarding adaptatif** | Conçoit une mémoire multi-vault sans supposer que l'utilisateur gère des clients ou des projets. |
-| **Routage explicable** | Réutilise un vault, demande confirmation en cas d'ambiguïté ou justifie l'isolation. |
-| **Capture de sources** | Accepte fichiers, URLs et texte collé ; sépare l'original brut de la note normalisée. |
-| **Ingestion documentaire** | Utilise [Docling](https://github.com/docling-project/docling) pour la conversion structurée et les formats compatibles OCR. |
-| **Recherche locale** | Utilise [QMD](https://github.com/tobi/qmd) pour la recherche exacte, sémantique et hybride. |
-| **Mémoire temporelle** | Distingue quand un fait était vrai de quand la mémoire l'a appris, conserve les anciens faits et répond à une date donnée. |
-| **Contenus enregistrés** | Collecte assistée par navigateur pour Instagram, LinkedIn, Reddit, X et YouTube, classée par plateforme et collection. |
-| **Contrôle qualité** | Détecte liens cassés, sources orphelines, originaux manquants, dates invalides et chaînes de remplacement cassées. |
-| **Synchronisation facultative** | Sur demande, configure séparément `Agent/` et `Mémoire/` dans Syncthing et vérifie l'autre appareil, le versioning ou la sauvegarde séparée. |
-
-## Architecture
-
-Chaque installation contient deux dossiers frères. `Agent/` contient Wiki Memory ; `Mémoire/` contient plusieurs vaults indépendants. Les noms internes sont localisables et `vault.yaml` associe toujours les rôles logiques aux dossiers réellement choisis.
+Un plugin déclare capacités, dépendances, runtime, permissions, secrets, classes de données, schéma de configuration, health check et délai d’arrêt. Son cycle de vie est visible :
 
 ```text
-racine-installation/
-├── Agent/
-└── Mémoire/
-    ├── memory.config.yaml
-    ├── vaults.registry.yaml
-    └── connaissances/
-        ├── vault.yaml
-        ├── 00-Inbox/
-        ├── 01-Sources/
-        ├── 02-Wiki/
-        ├── 03-Syntheses/
-        ├── 04-Journal/
-        ├── 05-Meta/
-        └── 06-Medias/
+DISCOVERED → PENDING → STARTING → ACTIVE → DRAINING → STOPPED
+                         ↘ FAILED / QUARANTINED
 ```
 
-Les modèles, index, environnements Python, paquets Node, sessions navigateur, caches et logs restent hors des vaults synchronisés. Consultez le [guide d'architecture](docs/ARCHITECTURE.md).
+Les acquisitions sont nettoyées dans l’ordre inverse si le démarrage échoue. Les plugins Python non approuvés sont mis en quarantaine hors mode développeur ; les runtimes `executable` et `oci` ne sont jamais chargés dans le processus Core. Le kit de conformité vérifie les manifests, schémas, capacités et états :
 
-Le fonctionnement reste compréhensible sans l'outil :
-
-```text
-Source conservée ---> Fait sourcé et daté ---> Réponse vérifiable
-                           |
-                           +-- c'était vrai quand ?
-                           +-- la mémoire l'a appris quand ?
-
-Ancien fait conservé ---> Nouveau fait courant
+```bash
+python scripts/schema_validate.py
+python scripts/plugin_conformance.py
 ```
 
-Un fait qui change n'est jamais effacé silencieusement. L'ancienne note indique jusqu'à quand elle était vraie et pointe vers son remplacement. Si la source ne fournit aucune date, Wiki Memory laisse la date vide et affiche une question ouverte plutôt que d'inventer.
+Contrats et création d’un connecteur : [Plugin SDK](docs/PLUGIN_SDK.md).
 
-Lors de l'activation des réseaux sociaux, l'agent explique l'intérêt et les limites du scan, vérifie les dépendances, demande les plateformes, collections, dossiers de destination et règles média, puis ouvre le navigateur Codex pour une connexion interactive. Après un premier test, il propose une synchronisation manuelle, quotidienne, hebdomadaire ou personnalisée avec heure, fuseau et destination du compte rendu. Les identifiants ne sont jamais demandés dans la conversation ni copiés dans la mémoire.
+## Sources officielles V1
 
-## Vie privée et sécurité
+- fichiers, URLs et texte ;
+- navigateur social, sans contourner les contrôles d’accès ;
+- audio MP3/M4A/WAV avec original immuable, transcription locale `whisper.cpp` ou Mistral explicite, timestamps et révisions ;
+- PostgreSQL read-only avec allowlists obligatoires de schémas, tables et colonnes, snapshot/cursor avec recouvrement idempotent, et adaptateur Debezium CDC ;
+- Docling pour les documents structurés ;
+- packs d’événements et blobs pour Syncthing — jamais le SQLite actif.
 
-- Aucun service de mémoire hébergé et aucune télémétrie.
-- Aucun cookie, profil navigateur, mot de passe ou état d'authentification copié.
-- Uniquement des fixtures synthétiques dans le dépôt.
-- Arrêt explicite face aux captchas, contrôles, limites ou changements d'interface.
-- CI sur macOS, Linux et Windows, analyse de secrets et détection des chemins personnels.
+Plaud n’est pas une dépendance : un export audio Plaud est ingéré par le connecteur audio et conserve Plaud comme provenance. Aucun audio ne part sur Internet sans choix explicite d’un provider réseau.
 
-Syncthing synchronise mais ne remplace pas une sauvegarde. Activez le versioning sur au moins un appareil ou maintenez une sauvegarde séparée.
+Tous les `SourceConnector` suivent les mêmes commandes :
 
-## Documentation
+```bash
+wiki-memory connector-check ./Mémoire --plugin source-social-browser --config social.json
+wiki-memory connector-discover ./Mémoire --plugin source-social-browser --config social.json
+wiki-memory connector-sync ./Mémoire --plugin source-social-browser --config social.json \
+  --selection selection-social.json --vault knowledge --instance navigateur-poste
+```
 
-- [Premiers pas](docs/GETTING_STARTED.md)
-- [Architecture](docs/ARCHITECTURE.md)
-- [Référence CLI](docs/CLI_REFERENCE.md)
-- [Obsidian et Syncthing](docs/OBSIDIAN_AND_SYNCTHING.md)
-- [Connecteurs sociaux](docs/SOCIAL_CONNECTORS.md)
-- [Dépannage](docs/TROUBLESHOOTING.md)
-- [Choix open source](docs/OPEN_SOURCE_DECISIONS.md)
+Un manifeste tiers explicite suit ce même parcours. En solo, un plugin Python
+tiers exige `--developer-mode`; les connecteurs `executable` et `oci` restent
+isolés par capacité. Les secrets nommés passent uniquement par
+`--secret-env SECRET=VARIABLE_ENV`, jamais par le fichier de configuration.
+Avec `--profile team-client`, utilisez aussi `--profile-config` pour fournir
+la configuration `serverUrl` du plugin `team-client`.
 
-## Contribuer
+## Team optionnel
 
-Consultez [CONTRIBUTING.md](CONTRIBUTING.md). Toutes les fixtures doivent rester synthétiques et la commande `python3 scripts/privacy_scan.py .` doit réussir avant une pull request.
+Team fournit une API FastAPI, PostgreSQL, S3/MinIO, OIDC, RBAC+ACL, revue, audit, recherche préfiltrée par autorisation, worker transactionnel `FOR UPDATE SKIP LOCKED`, outbox hors ligne et console `/console`.
 
-Wiki Memory est distribué sous [licence MIT](LICENSE). Questions et idées : [GitHub Discussions](https://github.com/ncleton-petitmaker/wiki-memory/discussions).
+```bash
+cd deploy/team
+docker compose up -d
+```
+
+Le Compose n’expose l’API que sur `127.0.0.1:8787`; placez un reverse proxy TLS devant elle. Le chart Helm se trouve dans `deploy/helm/wiki-memory`. Consultez [Team self-hosting](docs/TEAM_SELF_HOSTING.md) avant toute production : OIDC, sauvegardes PITR, versioning objet et restauration testée sont obligatoires.
+
+Comportements par défaut : « garde ça » reste privé ; une publication partagée exige un aperçu exact et son hash ; les sources d’équipe sont des preuves, les faits extraits sont des propositions ; les conflits de version créent une proposition, jamais une fusion silencieuse.
+
+## Interfaces agents
+
+Le moteur expose les mêmes primitives en HTTP local et Team : captures, événements, blobs, recherche, propositions, revue et santé. La façade MCP expose `memory_capture`, `memory_search`, `memory_get_evidence`, `memory_propose_change`, `memory_publish` et, pour les curateurs, `memory_review`.
+
+```bash
+wiki-memory mcp-serve ./Mémoire
+wiki-memory serve ./Mémoire
+wiki-memory team-sync ./Mémoire --server https://memory.example
+```
+
+## Sauvegarde, reconstruction et transport
+
+```bash
+wiki-memory backup ./Mémoire ./backup.tar.gz
+wiki-memory backup-verify ./backup.tar.gz
+wiki-memory backup-restore ./backup.tar.gz ./Mémoire-restaurée
+wiki-memory rebuild ./Mémoire
+wiki-memory event-pack-export ./Mémoire
+wiki-memory event-pack-import ./Mémoire ./pack.json
+```
+
+Les sauvegardes utilisent l’API SQLite backup, manifestent et vérifient chaque fichier, refusent les liens et traversées de chemin, puis contrôlent l’intégrité et le nombre d’événements. Les packs sont immuables, hashés et importés de manière idempotente après arrivée de leurs blobs.
+
+## Limites honnêtes de l’alpha
+
+- le serveur Team utilise PostgreSQL FTS ; la recherche vectorielle serveur n’est pas encore livrée ;
+- la recherche du cache Team hors ligne est lexicale et filtrée avant lecture ; les embeddings QMD restent volontairement limités aux coffres privés ;
+- les plugins `executable` et `oci` passent par un hôte NDJSON à capacités limitées. Un exécutable est isolé du Core mais pas sandboxé au niveau de l’OS ; Team doit exiger un OCI signé pour les connecteurs hostiles ;
+- les migrations forward propres au plugin sont durables et rejouables après crash, pour les plugins Python, `executable` et `oci` ; une nouvelle version saine est démarrée en staging, échange atomiquement toutes ses capacités, puis draine/redémarre ses dépendants ;
+- l’adaptateur Debezium est livré, mais l’exploitation du transport Kafka/Connect reste externe ;
+- le chart crée PostgreSQL/MinIO pour évaluation, mais une production doit fournir HA, PITR et une restauration automatisée externe ;
+- la répétition 500 membres/100 connecteurs et la répétition WAL Team synthétique sont implémentées et exécutées. Le PITR et la restauration d’un object store versionné sur l’infrastructure réelle de l’opérateur, ainsi qu’un audit externe des autorisations/isolation, restent des gates de release stable. La durabilité solo des événements acquittés possède une campagne `kill -9` reproductible, à exécuter sur chaque système de fichiers supporté avant le tag stable ;
+- aucun graphe canonique ni CRDT sémantique n’est inclus.
+
+## Développement
+
+```bash
+python -m unittest discover -s tests -v
+python -m compileall -q src scripts tests
+python scripts/schema_validate.py
+python scripts/plugin_conformance.py
+python scripts/privacy_scan.py .
+```
+
+CI couvre Python 3.10/3.12 sur Linux, macOS et Windows, PostgreSQL réel, scan de secrets, SBOM, provenance et signatures Cosign des releases et images GHCR. Seules des fixtures synthétiques sont admises dans GitHub ; aucune mémoire utilisateur n’y transite.
+
+Documentation : [Architecture](docs/ARCHITECTURE.md) · [Plugin SDK](docs/PLUGIN_SDK.md) · [Team](docs/TEAM_SELF_HOSTING.md) · [Fiabilité](docs/RELIABILITY.md) · [Évidence de release](docs/RELEASE_EVIDENCE.md) · [CLI](docs/CLI_REFERENCE.md) · [Sécurité](SECURITY.md).
+
+Licence : [MIT](LICENSE).

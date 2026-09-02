@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wiki-memory.dev/schemas/plugin-manifest.schema.json",
+  "title": "Wiki Memory plugin manifest",
+  "type": "object",
+  "required": ["apiVersion", "id", "version", "minimumSdkVersion", "runtime", "provides", "requires", "permissions"],
+  "properties": {
+    "apiVersion": {"const": "wiki-memory/v1"},
+    "id": {"type": "string", "pattern": "^[a-z0-9]+(?:[.-][a-z0-9]+)*$"},
+    "version": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$"},
+    "minimumSdkVersion": {"type": "string", "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:[-+][0-9A-Za-z.-]+)?$"},
+    "runtime": {"enum": ["python", "executable", "oci"]},
+    "entrypoint": {"type": "string", "minLength": 1},
+    "command": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 1},
+    "image": {"type": "string", "minLength": 1},
+    "provides": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "requires": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "permissions": {
+      "type": "object",
+      "properties": {
+        "filesystem": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "network": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "secrets": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+        "subprocess": {"type": "boolean"},
+        "dataClasses": {"type": "array", "items": {"type": "string"}, "uniqueItems": true}
+      },
+      "additionalProperties": false
+    },
+    "configSchema": {"type": "string"},
+    "migrations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["fromVersion", "toVersion", "entrypoint"],
+        "properties": {
+          "fromVersion": {"type": "string"},
+          "toVersion": {"type": "string"},
+          "entrypoint": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "healthCheck": {"type": "string"},
+    "stopTimeoutSeconds": {"type": "integer", "minimum": 1, "maximum": 300},
+    "signature": {"type": "object"}
+  },
+  "allOf": [
+    {"if": {"properties": {"runtime": {"const": "python"}}}, "then": {"required": ["entrypoint"]}},
+    {"if": {"properties": {"runtime": {"const": "executable"}}}, "then": {"required": ["command"]}},
+    {"if": {"properties": {"runtime": {"const": "oci"}}}, "then": {"required": ["image"]}}
+  ],
+  "additionalProperties": false
+}

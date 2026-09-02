@@ -1,6 +1,6 @@
 # Open-source design decisions
 
-Wiki Memory keeps plain Markdown as the durable source of truth and uses replaceable local tools around it.
+Wiki Memory keeps the append-only event ledger and original evidence as the durable source of truth. Plain Markdown remains a portable, readable, editable, and fully rebuildable projection; local tools around it stay replaceable.
 
 ## Adopted
 

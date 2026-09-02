@@ -40,7 +40,7 @@ FOLDER_PRESETS = {
 }
 
 
-GITIGNORE = """# Local-only and reproducible runtime state
+GITIGNORE = """# Runtime and secrets (the canonical ledger is backed up by Wiki Memory, not Git)
 .DS_Store
 .env
 .env.*
@@ -208,6 +208,11 @@ def init_memory(root: Path, spec: dict[str, Any]) -> dict[str, Any]:
             "versioning_confirmed": bool(spec.get("versioning_confirmed", False)),
         },
         "runtime": {"storage": "os-user-data-directory", "inside_memory_root": False},
+        "architecture": {
+            "canonical": "event-ledger-and-evidence",
+            "markdown": "rebuildable-projection",
+            "default_profile": "solo",
+        },
     }
     registry = {"schema_version": SCHEMA_VERSION, "updated_at": now, "vaults": []}
     write_data(root / CONFIG_NAME, config)
@@ -215,6 +220,9 @@ def init_memory(root: Path, spec: dict[str, Any]) -> dict[str, Any]:
     (root / "AGENTS.md").write_text(_agents_markdown(language), encoding="utf-8")
     (root / "WIKI.md").write_text(_wiki_markdown(language), encoding="utf-8")
     (root / ".gitignore").write_text(GITIGNORE, encoding="utf-8")
+    durable = root / ".wiki-memory" / "data"
+    for child in ("blobs/sha256", "outbox", "exports"):
+        (durable / child).mkdir(parents=True, exist_ok=True)
     if sync_enabled:
         (root / ".stignore").write_text(STIGNORE, encoding="utf-8")
         (root / "syncthing.ignore.template").write_text(STIGNORE, encoding="utf-8")

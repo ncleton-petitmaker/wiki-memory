@@ -4,7 +4,42 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.2] - 2026-09-02
+
 ### Added
+
+- Team search can be atomically rebuilt from canonical PostgreSQL events, with an admin operation and audit entry.
+- `team_restore_verify.py` validates restored Team event hashes, contiguous streams, evidence objects, and the rebuilt search projection before recording an aggregate rehearsal attestation.
+- `wiki-memory team-preflight` fails closed when its verifiable Team readiness gates are absent: database/object-store reachability, bucket versioning, OIDC, the dedicated restore-attestation channel, or a successful rehearsal.
+- Stable release tags now require protected-environment links to the deployment recovery rehearsal and independent security audit; prerelease tags cannot claim those external gates.
+- Synthetic local performance harness with explicit 100,000-document release-gate mode.
+- Generic `connector-check`, `connector-discover`, and `connector-sync` commands for every `SourceConnector`, including explicitly opted-in third-party manifests in solo mode.
+- Isolated executable/OCI `source.*` capabilities now receive the normal source contract through bounded RPC batches and durable checkpoint handoff.
+- Team external plugins now require both an Ed25519 manifest signature and a separately configured administrator allowlist.
+
+### Changed
+
+- Team readiness now fails closed when PostgreSQL or object storage is unavailable.
+- An organization publication begins a separately replayable public stream after curation, causally linked to its inaccessible Team proposal; global organization replication never stalls on a filtered predecessor.
+- Restore attestations now require both an admin identity and a distinct restoration-attestation secret.
+- Simultaneous first captures now serialize SQLite WAL negotiation instead of failing with a transient database lock.
+- Local and Team APIs verify content-addressed evidence before serving it; corrupted object-store copies are atomically repaired when a verified replacement is uploaded.
+
+## [1.0.0-alpha.1] - 2026-09-02
+
+### Added
+
+- Canonical SQLite event ledger, UUIDv7 streams, semantic idempotency, durable outbox and checkpoints.
+- Content-addressed evidence with verified atomic writes and complete projection rebuild.
+- Capability plugin loader, lifecycle/cleanup, profiles, schemas, conformance kit, and quarantine policy.
+- Solo HTTP/MCP gateways, verified backup/restore, immutable event-pack transport, and reviewed Markdown edits.
+- Optional Team API/client/worker with OIDC, ACLs, review, audit, offline replication, PostgreSQL/S3, Compose, Helm, metrics, and OTLP.
+- Generic audio plus Mistral/whisper.cpp providers and PostgreSQL snapshot/CDC contracts.
+
+### Changed
+
+- Markdown is now a rebuildable projection; evidence and events are authoritative.
+- Syncthing transports immutable blobs and packs instead of a live memory database.
 
 - Optional bi-temporal frontmatter for Wiki facts and syntheses, with preserved supersession history.
 - Current, world-time, and system-time query views with explicit stale-fact reporting.
@@ -22,5 +57,7 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v0.0.0...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.2...HEAD
+[1.0.0-alpha.2]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.2
+[1.0.0-alpha.1]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.1
 [0.0.0]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v0.0.0

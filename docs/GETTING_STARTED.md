@@ -116,7 +116,7 @@ wiki-memory syncthing-setup /path/to/installation/Mémoire
 wiki-memory syncthing-setup /path/to/installation/Mémoire --device-id OTHER-DEVICE-ID --device-name "Other device"
 ```
 
-The other device must accept both shared folders and map them to sibling `Agent/` and `Mémoire/` destinations. On every enabled device, keep each `.stignore` aligned with its `syncthing.ignore.template`; Syncthing does not synchronize `.stignore` itself.
+The other device accepts `Agent/` and the immutable transport share, mapped into an initialized memory at `Mémoire/.wiki-memory/data/`. Keep generated ignore files, wait for blobs and packs, import packs, then run verify and rebuild. Never map Syncthing directly to `events.sqlite3`.
 
 Enable Syncthing file versioning on at least one device or maintain a separate backup. Then run:
 

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wiki-memory.dev/schemas/access-policy.schema.json",
+  "title": "Wiki Memory access policy",
+  "type": "object",
+  "required": ["owners", "readers"],
+  "properties": {
+    "owners": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "readers": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "groups": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "spaces": {"type": "array", "items": {"type": "string", "minLength": 1}, "uniqueItems": true},
+    "classification": {"enum": ["public", "internal", "confidential", "restricted"]},
+    "audience": {"enum": ["explicit", "space", "organization"]}
+  },
+  "additionalProperties": false
+}

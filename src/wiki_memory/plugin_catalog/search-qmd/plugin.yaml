@@ -1,0 +1,17 @@
+apiVersion: wiki-memory/v1
+id: search-qmd
+version: 1.0.0
+minimumSdkVersion: 1.0.0
+runtime: python
+entrypoint: wiki_memory.builtin_plugins:search_qmd
+provides: [search]
+requires: [projection.markdown]
+permissions:
+  filesystem: [memory-root, runtime]
+  network: []
+  secrets: []
+  subprocess: true
+  dataClasses: [memory]
+configSchema: ../config-empty.schema.json
+healthCheck: services
+stopTimeoutSeconds: 30

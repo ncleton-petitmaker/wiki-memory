@@ -1,0 +1,23 @@
+apiVersion: wiki-memory/v1
+id: team-client
+version: 1.0.0
+minimumSdkVersion: 1.0.0
+runtime: python
+entrypoint: wiki_memory.builtin_plugins:team_client
+provides:
+  - identity.oidc
+  - spaces.shared
+  - authorization
+  - replication
+  - review
+  - audit
+  - team-contribution
+requires: [memory-engine, events, evidence, projection.markdown]
+permissions:
+  filesystem: [memory-root, runtime]
+  network: [configured-team-server]
+  secrets: [TEAM_ACCESS_TOKEN]
+  dataClasses: [memory, identity]
+configSchema: config.schema.json
+healthCheck: services
+stopTimeoutSeconds: 60

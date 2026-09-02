@@ -5,6 +5,7 @@ import json
 import os
 import re
 import sys
+import tempfile
 import unicodedata
 from datetime import datetime, timezone
 from pathlib import Path
@@ -19,7 +20,7 @@ except ImportError:  # pragma: no cover - bootstrap installs PyYAML
 CONFIG_NAME = "memory.config.yaml"
 REGISTRY_NAME = "vaults.registry.yaml"
 VAULT_CONFIG_NAME = "vault.yaml"
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 class MemoryError(RuntimeError):
@@ -45,6 +46,13 @@ def ensure_root(path: str | Path) -> Path:
         raise MemoryError(f"Memory root does not exist: {root}")
     if not (root / CONFIG_NAME).is_file():
         raise MemoryError(f"Not a Wiki Memory root: {root}")
+    config = load_data(root / CONFIG_NAME)
+    version = int(config.get("schema_version", 0))
+    if version != SCHEMA_VERSION:
+        raise MemoryError(
+            f"Unsupported Wiki Memory schema {version}; this V1 engine requires schema {SCHEMA_VERSION}. "
+            "Create a new memory root. Existing roots are never modified automatically."
+        )
     return root
 
 
@@ -65,12 +73,113 @@ def load_data(path: Path) -> dict[str, Any]:
         if yaml is not None:
             data = yaml.safe_load(raw)
         else:
-            data = json.loads(raw)
+            try:
+                data = json.loads(raw)
+            except json.JSONDecodeError:
+                data = _safe_minimal_yaml(raw)
     except Exception as exc:
         raise MemoryError(f"Invalid YAML/JSON in {path}: {exc}") from exc
     if not isinstance(data, dict):
         raise MemoryError(f"Expected an object in {path}")
     return data
+
+
+def _yaml_scalar(value: str) -> Any:
+    value = value.strip()
+    if value == "":
+        return None
+    if value in {"null", "~"}:
+        return None
+    if value.lower() in {"true", "false"}:
+        return value.lower() == "true"
+    if value.startswith("[") and value.endswith("]"):
+        body = value[1:-1].strip()
+        return [] if not body else [_yaml_scalar(item) for item in body.split(",")]
+    if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+        return value[1:-1]
+    try:
+        return int(value)
+    except ValueError:
+        return value
+
+
+def _safe_minimal_yaml(raw: str) -> Any:
+    """Parse the non-ambiguous YAML subset used by bundled manifests.
+
+    User-authored YAML still requires PyYAML. This fallback deliberately rejects
+    anchors, tags, multiline scalars, duplicate keys, and mixed list/map blocks.
+    """
+
+    prepared: list[tuple[int, str]] = []
+    for number, line in enumerate(raw.splitlines(), 1):
+        if not line.strip() or line.lstrip().startswith("#"):
+            continue
+        if "\t" in line[: len(line) - len(line.lstrip())]:
+            raise ValueError(f"Tabs are not allowed in YAML indentation (line {number}).")
+        text = line.lstrip(" ")
+        if any(token in text for token in ("!!", "&", "*")) or text in {"|", ">"}:
+            raise ValueError(f"Unsupported YAML feature on line {number}.")
+        prepared.append((len(line) - len(text), text))
+    if not prepared:
+        return {}
+
+    def parse_block(index: int, indent: int) -> tuple[Any, int]:
+        if prepared[index][0] != indent:
+            raise ValueError("Invalid YAML indentation.")
+        list_mode = prepared[index][1].startswith("- ")
+        container: Any = [] if list_mode else {}
+        while index < len(prepared):
+            current_indent, text = prepared[index]
+            if current_indent < indent:
+                break
+            if current_indent > indent:
+                raise ValueError("Unexpected YAML indentation.")
+            if list_mode:
+                if not text.startswith("- "):
+                    raise ValueError("Cannot mix YAML lists and mappings in one block.")
+                item_text = text[2:].strip()
+                if not item_text:
+                    if index + 1 >= len(prepared) or prepared[index + 1][0] <= indent:
+                        raise ValueError("Empty YAML list item.")
+                    item, index = parse_block(index + 1, prepared[index + 1][0])
+                    container.append(item)
+                    continue
+                if ":" in item_text:
+                    key, value = item_text.split(":", 1)
+                    item: dict[str, Any] = {key.strip(): _yaml_scalar(value)}
+                    index += 1
+                    if index < len(prepared) and prepared[index][0] > indent:
+                        extra, index = parse_block(index, prepared[index][0])
+                        if not isinstance(extra, dict):
+                            raise ValueError("YAML list mapping extension must be an object.")
+                        for extra_key, extra_value in extra.items():
+                            if extra_key in item:
+                                raise ValueError(f"Duplicate YAML key: {extra_key}")
+                            item[extra_key] = extra_value
+                    container.append(item)
+                    continue
+                container.append(_yaml_scalar(item_text))
+                index += 1
+                continue
+            if text.startswith("- ") or ":" not in text:
+                raise ValueError("Expected a YAML mapping entry.")
+            key, value = text.split(":", 1)
+            key = key.strip()
+            if key in container:
+                raise ValueError(f"Duplicate YAML key: {key}")
+            index += 1
+            if value.strip():
+                container[key] = _yaml_scalar(value)
+            elif index < len(prepared) and prepared[index][0] > indent:
+                container[key], index = parse_block(index, prepared[index][0])
+            else:
+                container[key] = {}
+        return container, index
+
+    parsed, final_index = parse_block(0, prepared[0][0])
+    if final_index != len(prepared):
+        raise ValueError("Could not parse complete YAML document.")
+    return parsed
 
 
 def write_data(path: Path, data: dict[str, Any]) -> None:
@@ -79,7 +188,24 @@ def write_data(path: Path, data: dict[str, Any]) -> None:
         rendered = yaml.safe_dump(data, allow_unicode=True, sort_keys=False, width=100)
     else:
         rendered = json.dumps(data, ensure_ascii=False, indent=2) + "\n"
-    path.write_text(rendered, encoding="utf-8")
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=f".{path.name}.", suffix=".tmp", dir=path.parent
+    )
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
+            handle.write(rendered)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+        if os.name != "nt":
+            directory = os.open(path.parent, os.O_RDONLY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def load_memory(root: Path) -> dict[str, Any]:

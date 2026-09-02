@@ -1,149 +1,126 @@
-# Architecture
+# Architecture V1
 
-Wiki Memory separates durable knowledge from reproducible runtime state. Markdown and original files are the source of truth; indexes, models, browser state, and caches are disposable.
+## Boundaries
 
-## System overview
+Core owns only plugin lifecycle, the append-only ledger, content-addressed evidence, projection checkpoints, the event bus, and minimal CLI/API surfaces. Markdown, QMD, Docling, social capture, audio, PostgreSQL, Syncthing, MCP, backup, and Team are plugins or plugin-facing services.
 
 ```mermaid
-flowchart TB
-    Input[Files · URLs · text · social saves] --> Capture[Capture and canonicalize]
-    Capture --> Raw[Immutable raw source]
-    Capture --> Source[Normalized source note]
-    Source --> Wiki[Living wiki concepts]
-    Source --> Output[Syntheses and deliverables]
-    Wiki --> Query[QMD exact + semantic + hybrid search]
-    Output --> Query
-    Raw --> Audit[Hashes · revisions · provenance]
-    Source --> Audit
-    Doctor[Lint + Doctor] --> Source
-    Doctor --> Wiki
-    Runtime[(Local runtime outside vaults)] --> Query
-    Runtime --> Capture
+flowchart LR
+  A[CLI · HTTP · MCP · agents] --> C[Core]
+  S[Source plugins] --> C
+  C --> E[(SQLite WAL events)]
+  C --> B[SHA-256 evidence]
+  E --> P[Rebuildable projections]
+  B --> P
+  C -. optional Team .-> T[FastAPI]
+  T --> PG[(PostgreSQL)]
+  T --> O[S3 / MinIO]
+  T --> R[Review console]
 ```
 
-## Installation and memory container
+GitHub carries code, schemas, CI, signed artifacts, and a catalog. It never carries user memory. Runtime caches, QMD indexes, browser state, credentials, models, and temporary media remain outside the memory root. The durable solo ledger and evidence live under `Mémoire/.wiki-memory/data/` because they are user data, not runtime cache.
 
-Each durable installation root contains exactly two sibling directories:
+The cached Team entitlement session is device-local authorization state, not memory. It also stays in the OS runtime directory and is excluded from backup and Syncthing; restoring shared projections on another device therefore exposes nothing until that device authenticates.
 
-- `Agent/`: the public Wiki Memory plugin files;
-- `Mémoire/`: global memory configuration and one or more independent vaults.
+## Write path
 
-The `Mémoire/` container holds:
+1. A connector computes stable source identity/version and emits a protocol message.
+2. Core writes the evidence to a same-filesystem temporary file, flushes it, verifies SHA-256, atomically renames it, and fsyncs the containing directory.
+3. Core validates UUIDv7, timestamps, ACL, evidence references, idempotency, and expected stream version.
+4. SQLite executes `BEGIN IMMEDIATE`, assigns the next stream version, inserts the immutable event, optionally inserts its outbox row in the same transaction, and commits with WAL plus `synchronous=FULL`.
+5. Only then does the projector advance. A projection failure is persisted as operational state and does not revoke the durable event acknowledgement.
 
-- `memory.config.yaml`: language, registered vaults, connectors, schedules, and sync policy;
-- `vaults.registry.yaml`: vault paths and routing decisions;
-- `AGENTS.md`: generic agent behavior for the memory;
-- `WIKI.md`: the generated architecture contract;
-- `syncthing.ignore.template`: shared ignore policy, created only when synchronization is enabled;
-- `.stignore`: local Syncthing copy, created and verified only on enabled devices;
-- one directory per vault.
+Database triggers reject updates and deletes from `events`. Corrections, tombstones, review decisions, retractions, and supersessions are later events. An orphan blob is safe after a crash; a committed event pointing to an absent blob is not allowed.
 
-The container itself is not necessarily an Obsidian vault. Each registered vault can be opened independently. When synchronization is enabled, `Agent/` and `Mémoire/` are two separate Syncthing folders. Runtime and credential state remain outside both.
+## Event and source contracts
 
-## Vault roles
+The executable schemas are:
 
-`vault.yaml` maps logical roles to the actual localized directory names. Scripts use the role, never a hard-coded translated path.
+- `schemas/memory-event.schema.json`;
+- `schemas/access-policy.schema.json`;
+- `schemas/source-message.schema.json`;
+- `schemas/plugin-manifest.schema.json`.
 
-| Role | Responsibility | Mutability |
-| --- | --- | --- |
-| `inbox` | unprocessed captures | temporary |
-| `sources` | originals, raw captures, normalized source notes, revisions | append-only |
-| `wiki` | concepts, entities, claims, and links | refactorable |
-| `outputs` | syntheses and deliverables | editable |
-| `journal` | chronological activity | append-oriented |
-| `meta` | gaps, contradictions, orphan reports, quality state | generated/editable |
-| `assets` | media referenced by Markdown | stable |
+Source delivery is at least once. A checkpoint is committed only after all earlier messages have durable events and evidence. Idempotency combines connector instance, source identity, source version, and content hash. Reusing the same idempotency key for different semantic content is rejected rather than silently deduplicated.
 
-## Source lifecycle
+`occurredAt` describes the source world; `recordedAt` describes when memory learned it. Missing real dates remain `null`. Extracted facts are proposals and retain exact extractor plugin/version plus evidence. A human-authored procedural memory is the only accepted assertion allowed without evidence.
 
-1. Canonicalize the URL or identify the file origin.
-2. Hash the content.
-3. Preserve the raw capture and original file.
-4. Create a normalized Markdown source note with frontmatter.
-5. Treat matching URL and hash as a duplicate.
-6. Preserve a significant new hash as a revision.
-7. Build or update wiki notes separately.
-8. Refresh QMD outside the vault.
+## Projection rules
 
-Source notes are evidence. They are not rewritten to make a later conclusion look cleaner.
+Each projector owns a checkpoint and plugin version. A version change requires a rebuild; history is never rewritten. Markdown writes use a temporary file, fsync, and atomic rename. Generated file hashes are recorded in the rebuildable `.wiki-memory/projections/markdown-generated.sqlite3` state index; it uses per-file atomic upserts so a large vault never rewrites an ever-growing manifest on every capture. QMD defaults to deterministic local BM25 retrieval; model-backed query expansion/reranking is never silently downloaded or required for an everyday search.
 
-## Bi-temporal facts
+When a generated file changes outside the projector:
 
-Wiki notes and syntheses can describe one version of a fact on two independent timelines:
+1. the projector stops replacing that path and writes new generated output under `projections/pending`;
+2. `wiki-memory markdown-edits` preserves the human file as evidence and creates `projection.edit.proposed`;
+3. solo review accepts or rejects it; shared edits require a Team curator;
+4. an accepted edit replays as `projection.edit.accepted`, so a full rebuild reproduces it exactly.
 
-| Frontmatter field | Timeline | Meaning |
-| --- | --- | --- |
-| `valid_from` | world | when the fact became true in reality |
-| `valid_until` | world | when the fact stopped being true in reality |
-| `recorded_at` | system | when the memory learned the fact |
-| `invalidated_at` | system | when the memory learned that the fact was no longer current |
-| `supersedes` | history | relative wikilink from the replacement to the older fact |
-| `superseded_by` | history | relative wikilink from the older fact to its replacement |
+Normal rebuild refuses unreviewed edits. `--force` is an explicit destructive override intended for a reviewed rejection or operator recovery.
 
-All six fields are optional so existing vaults remain readable and valid. World time accepts an ISO 8601 date or timestamp. System time uses an RFC 3339 UTC timestamp. Time intervals are half-open: a fact is active from its start, inclusive, until its end, exclusive.
+## Plugin lifecycle and trust
 
-The temporal unit is a Markdown note. Keep Wiki fact notes focused enough that one validity interval describes the note. A synthesis is versioned as a whole; if parts of it have different lifecycles, move those claims into focused Wiki notes and cite them from the synthesis.
+The loader resolves capability dependencies, validates configuration without executing plugin code, and reports missing services as `PENDING`. Each acquisition registers a cleanup; failed startup unwinds in reverse order. Production update semantics are drain-and-restart, not hot reload.
 
-Example:
+Bundled trusted Python plugins may run in process. An unknown Python plugin is quarantined unless solo developer mode is explicit. A `signature` field alone is never trusted: Team requires catalog trust or a real verifier callback. Executable and OCI plugins use a separate NDJSON host and expose only capability-scoped RPC facades; they never receive Core objects. OCI images must be digest-pinned and run read-only with dropped Linux capabilities and no network unless declared. An executable process is isolation from Core, not a claim of OS sandboxing.
 
-```yaml
----
-epistemic_status: fact
-valid_from: 2026-04-01
-valid_until: null
-recorded_at: 2026-04-03T09:20:00Z
-invalidated_at: null
-supersedes: "[[offer-before-april-2026]]"
-superseded_by: null
----
+This last boundary is intentionally fail-closed. The alpha does not claim that a Python interpreter can sandbox hostile Python.
+
+## Solo storage
+
+```text
+Mémoire/
+├── memory.config.yaml
+├── vaults.registry.yaml
+├── .wiki-memory/
+│   ├── data/
+│   │   ├── events.sqlite3
+│   │   ├── blobs/sha256/aa/bb/<digest>
+│   │   └── exports/<producer>/<immutable-pack>.json
+│   └── projections/markdown-generated.sqlite3
+└── <vault>/
+    ├── 01-Sources/       # projection
+    ├── 02-Wiki/          # projection / reviewed human edits
+    └── ...
 ```
 
-When ingesting a source, a date explicitly attached to the fact takes priority. Otherwise the fact inherits an explicit publication, meeting, or sent date from the source. Capture time, filesystem time, and the current clock must never be substituted for a missing world date. If the source supplies no date, `valid_from` remains null and the temporal gap is recorded as an open question.
+Syncthing points at `.wiki-memory/data`, excludes SQLite and outbox state, and transports only blobs plus immutable packs. Each receiving device imports packs idempotently and rebuilds its own Markdown and indexes.
 
-Replacing a fact never deletes or rewrites its body. The newer fact points to the older fact with `supersedes`. Once the replacement is confirmed, the older fact receives `valid_until`, `invalidated_at`, and `superseded_by`. Only this lifecycle frontmatter may be completed; files in the Sources role remain untouched.
+## Team authorization and replication
 
-When two contradictory facts have comparable `valid_from` values, the later world-time fact is current even if it was ingested first. If the order is missing or ambiguous, lint can present the alternatives but must not choose or apply one without user confirmation.
+Scopes are `private`, `team`, and `organization`. Private events are rejected by the server. An ACL has owners, readers, groups, spaces, classification, and an audience of `explicit`, `space`, or `organization`. Derived ACLs intersect readers/groups/spaces and retain the most restrictive classification. Search first limits candidate spaces, then applies the exact ACL before returning a result. Blob GET performs the same check through referencing events.
 
-Queries use current facts by default. A system-time snapshot answers what the memory knew at a date using `recorded_at` and `invalidated_at`. A world-time snapshot answers what was true at a date using `valid_from` and `valid_until`. Results retain source citations and report stale or undated facts excluded by the selected view.
+A content hash is not an authorization capability. When an uploaded Team event
+reuses a blob already referenced by canonical events, the server first requires
+authorized provenance and derives the destination ACL from it. A guessed hash
+cannot be attached to a new event, and a member who can read an object cannot
+republish it into a space absent from its provenance ACL.
 
-## Epistemic status
+An organization publication is two distinct events: a Team-scoped
+`source.publication.proposed` containing a deferred, normalized organization
+target, then a curator-created `source.published` event. The accepted event
+starts a new organization stream (version 1) and keeps the proposal as its
+causation: an organization reader is not entitled to receive the Team-scoped
+proposal, so a continued stream would be impossible to replay safely. The
+proposed event and its blob remain unreadable outside the Team space; only
+acceptance applies the organization ACL. A proposal is neither a hidden search result nor an early
+organization disclosure.
 
-Knowledge can be marked as:
+The client uploads absent blobs, then outbox events with their exact positive `streamVersion`. PostgreSQL serializes each stream with `pg_advisory_xact_lock`. A stale write creates an ACL-preserving conflict proposal. The client marks the outbox row rejected-for-review; it never reports successful synchronization.
 
-- `fact`: directly supported by available evidence;
-- `inference`: reasoned from evidence but not directly stated;
-- `open_question`: unresolved and worth investigating;
-- `unverified`: captured but not validated.
+After push, the client pulls by durable cursor. It downloads and verifies every missing blob before inserting the event. Unauthorized server events still advance the global cursor so a filtered row cannot trap a client forever.
 
-These labels describe epistemic status, not importance.
+## Team persistence and workers
 
-## Vault boundary algorithm
+PostgreSQL stores events, audit records, jobs, and the current search projection. Event insert and job enqueue share a transaction. Workers claim jobs using `FOR UPDATE SKIP LOCKED`, retry with bounded exponential delay, and dead-letter after five failures. Search projection deletion follows source tombstones and assertion retractions; canonical events remain. An admin can atomically rebuild Team search entirely from canonical events; the PITR verifier re-runs that rebuild, checks event hashes/contiguous streams, and verifies referenced object bytes before an aggregate restore attestation is accepted.
 
-The router compares four dimensions:
+Object storage is content addressed and verifies every upload and retrieval before it is considered usable evidence. MinIO versioning is enabled by the Compose initialization job. Production must provide PostgreSQL PITR and continuously tested restoration; the application does not pretend that a `pg_dump` is PITR.
 
-1. purpose;
-2. audience;
-3. lifecycle;
-4. confidentiality.
+## Decisions deliberately excluded
 
-A topic difference alone normally changes taxonomy, not the vault. A distinct confidentiality boundary is the strongest reason to isolate knowledge. When multiple vaults rank similarly, the router asks instead of guessing.
-
-## Runtime isolation
-
-The runtime directory follows operating-system conventions:
-
-- macOS: `~/Library/Application Support/WikiMemory`;
-- Windows: `%LOCALAPPDATA%\WikiMemory`;
-- Linux: `$XDG_DATA_HOME/wiki-memory` or `~/.local/share/wiki-memory`.
-
-It contains the Python environment, Docling, QMD, optional portable Node.js, models, indexes, and per-memory runtime state. None of it should be synchronized or committed.
-
-## Threat boundaries
-
-- Browser credentials and cookies are outside scope and never copied.
-- Paths are constrained to the selected memory root for memory writes.
-- Social capture fails closed on access controls.
-- Git and Syncthing exclusions cover secrets and reproducible state.
-- The privacy scanner rejects likely secrets, browser tokens, and personal absolute paths.
-
-See [SECURITY.md](../SECURITY.md) for reporting and supported versions.
+- No canonical graph: it may become a rebuildable projection after measured retrieval gain.
+- No semantic CRDT: stale knowledge edits become proposals.
+- No live arbitrary SQL tool attached to ingestion credentials.
+- No automatic organization publication or hidden ACL widening.
+- No cloud transcription by default.
+- No synchronization of active SQLite.

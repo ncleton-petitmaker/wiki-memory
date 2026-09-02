@@ -155,13 +155,14 @@ class WikiMemoryTests(unittest.TestCase):
         self.assertEqual(len(folder_adds), 2)
         self.assertEqual(
             {item["path"] for item in result["folders"].values()},
-            {str(agent.resolve()), str(memory.resolve())},
+            {str(agent.resolve()), str((memory / ".wiki-memory" / "data").resolve())},
         )
         self.assertTrue(any(command[3:5] == ["devices", "add"] for command in commands))
         folder_shares = [command for command in commands if command[3] == "folders" and command[5:7] == ["devices", "add"]]
         self.assertEqual(len(folder_shares), 2)
         self.assertTrue((agent / ".stignore").is_file())
         self.assertTrue((memory / ".stignore").is_file())
+        self.assertTrue((memory / ".wiki-memory" / "data" / ".stignore").is_file())
         config = load_data(memory / "memory.config.yaml")
         self.assertTrue(config["sync"]["configured_on_this_device"])
         self.assertEqual(config["sync"]["folder_id"], result["folder_id"])
@@ -474,7 +475,7 @@ class WikiMemoryTests(unittest.TestCase):
         manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["name"], "wiki-memory")
         self.assertEqual(manifest["license"], "MIT")
-        self.assertEqual(manifest["version"], "0.0.0")
+        self.assertEqual(manifest["version"], "1.0.0-alpha.2")
         self.assertEqual(manifest["interface"]["defaultPrompt"][0], "Commençons.")
         self.assertTrue(all("$wiki-memory" not in prompt for prompt in manifest["interface"]["defaultPrompt"]))
         self.assertTrue(all("Use " not in prompt for prompt in manifest["interface"]["defaultPrompt"]))

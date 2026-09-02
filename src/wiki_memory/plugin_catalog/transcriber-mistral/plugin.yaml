@@ -1,0 +1,16 @@
+apiVersion: wiki-memory/v1
+id: transcriber-mistral
+version: 1.0.0
+minimumSdkVersion: 1.0.0
+runtime: python
+entrypoint: wiki_memory.builtin_plugins:transcriber_mistral
+provides: [transcription]
+requires: []
+permissions:
+  filesystem: [selected-files, runtime]
+  network: [api.mistral.ai, configured-transcriber-endpoint]
+  secrets: [MISTRAL_API_KEY]
+  dataClasses: [audio, transcript]
+configSchema: config.schema.json
+healthCheck: services
+stopTimeoutSeconds: 30

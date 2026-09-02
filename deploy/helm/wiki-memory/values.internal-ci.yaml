@@ -1,0 +1,24 @@
+# Non-deployable CI fixture for the self-contained evaluation topology. It
+# exercises the internal PostgreSQL/MinIO manifests and their NetworkPolicies.
+image:
+  repository: ghcr.io/example/wiki-memory
+  digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+oidc:
+  issuer: https://identity.example.test
+  audience: wiki-memory-ci
+restoreAttestationToken: synthetic-restore-attestation-token
+postgresql:
+  internal: true
+  password: synthetic-postgres-password
+objectStore:
+  internal: true
+  accessKey: wiki-memory-ci
+  secretKey: synthetic-minio-secret
+networkPolicy:
+  apiIngress:
+    - namespaceSelector:
+        matchLabels: {kubernetes.io/metadata.name: ingress-system}
+      podSelector:
+        matchLabels: {app.kubernetes.io/name: ingress-gateway}
+  dnsCIDRs: [10.96.0.10/32]
+  oidcCIDRs: [203.0.113.20/32]

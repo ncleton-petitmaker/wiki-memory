@@ -5,10 +5,14 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 .venv/
+.venv-*/
+.build-*/
 venv/
 node_modules/
 .env
 .env.*
+!.env.example
+!deploy/team/.env.example
 *.log
 *.tmp
 *.sqlite

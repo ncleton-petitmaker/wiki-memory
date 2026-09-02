@@ -1,0 +1,21 @@
+apiVersion: wiki-memory/v1
+id: team-client
+requireSignatures: true
+trustedPlugins:
+  - projection-markdown
+  - search-qmd
+  - parser-docling
+  - source-social-browser
+  - backup-local
+  - team-client
+  - gateway-mcp
+plugins:
+  - projection-markdown
+  - search-qmd
+  - parser-docling
+  - source-social-browser
+  - backup-local
+  - team-client
+  - id: gateway-mcp
+    config:
+      includeReview: false

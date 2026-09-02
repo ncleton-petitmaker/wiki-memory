@@ -1,0 +1,9 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema","type":"object","required":["schemas","tables","columns"],
+  "properties":{
+    "batchSize":{"type":"integer","minimum":1,"maximum":10000},
+    "schemas":{"type":"array","items":{"type":"string"},"minItems":1},
+    "tables":{"type":"array","items":{"type":"string"},"minItems":1},
+    "columns":{"type":"object","minProperties":1,"additionalProperties":{"type":"array","items":{"type":"string"},"minItems":1}}
+  },"additionalProperties":false
+}

@@ -1,0 +1,16 @@
+apiVersion: wiki-memory/v1
+id: source-social-browser
+version: 1.0.0
+minimumSdkVersion: 1.0.0
+runtime: python
+entrypoint: wiki_memory.builtin_plugins:source_social_browser
+provides: [source.social]
+requires: [events, evidence, projection.markdown]
+permissions:
+  filesystem: [memory-root, selected-files]
+  network: [user-selected-social-platforms]
+  secrets: []
+  dataClasses: [source, social]
+configSchema: config.schema.json
+healthCheck: services
+stopTimeoutSeconds: 30

@@ -1,0 +1,16 @@
+apiVersion: wiki-memory/v1
+id: projection-markdown
+version: 1.0.0
+minimumSdkVersion: 1.0.0
+runtime: python
+entrypoint: wiki_memory.builtin_plugins:projection_markdown
+provides: [projection.markdown]
+requires: [events, evidence, projections]
+permissions:
+  filesystem: [memory-root]
+  network: []
+  secrets: []
+  dataClasses: [memory]
+configSchema: ../config-empty.schema.json
+healthCheck: services
+stopTimeoutSeconds: 15

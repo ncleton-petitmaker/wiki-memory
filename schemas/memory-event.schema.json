@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wiki-memory.dev/schemas/memory-event.schema.json",
+  "title": "Wiki Memory canonical event",
+  "type": "object",
+  "required": [
+    "eventId", "eventType", "schemaVersion", "streamId", "streamVersion", "idempotencyKey",
+    "scope", "spaceId", "actor", "recordedAt", "plugin", "evidenceRefs", "acl", "payload"
+  ],
+  "properties": {
+    "eventId": {"type": "string", "format": "uuid"},
+    "eventType": {"type": "string", "pattern": "^[a-z][a-z0-9.-]+$"},
+    "schemaVersion": {"type": "integer", "minimum": 1},
+    "streamId": {"type": "string", "minLength": 1, "maxLength": 2048},
+    "streamVersion": {"type": "integer", "minimum": 0},
+    "idempotencyKey": {"type": "string", "minLength": 1, "maxLength": 4096},
+    "scope": {"enum": ["private", "team", "organization"]},
+    "spaceId": {"type": "string", "minLength": 1},
+    "actor": {
+      "type": "object",
+      "required": ["type", "id"],
+      "properties": {"type": {"enum": ["user", "connector", "system"]}, "id": {"type": "string", "minLength": 1}},
+      "additionalProperties": false
+    },
+    "occurredAt": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "format": "date"},
+        {"type": "string", "format": "date-time"}
+      ]
+    },
+    "recordedAt": {"type": "string", "format": "date-time"},
+    "correlationId": {"type": ["string", "null"]},
+    "causationId": {"type": ["string", "null"]},
+    "plugin": {
+      "type": "object",
+      "required": ["id", "version"],
+      "properties": {"id": {"type": "string", "minLength": 1}, "version": {"type": "string", "minLength": 1}},
+      "additionalProperties": false
+    },
+    "evidenceRefs": {"type": "array", "items": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}, "uniqueItems": true},
+    "acl": {"$ref": "access-policy.schema.json"},
+    "payload": {"type": "object"},
+    "position": {"type": ["integer", "null"], "minimum": 1},
+    "eventHash": {"type": ["string", "null"], "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": false
+}

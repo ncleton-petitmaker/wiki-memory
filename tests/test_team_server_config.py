@@ -1,0 +1,42 @@
+"""Fail-closed configuration checks that run before the Team API listens."""
+
+from __future__ import annotations
+
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+from wiki_memory.config import MemoryError
+from wiki_memory.object_store import FileObjectStore
+from wiki_memory.team_server import create_app
+
+
+class _Repository:
+    def initialize(self) -> None:
+        return None
+
+
+class TeamServerConfigurationTests(unittest.TestCase):
+    def test_rejects_invalid_request_limits_during_startup(self) -> None:
+        invalid = {
+            "WIKI_MEMORY_MAX_JSON_BYTES": "not-a-number",
+            "WIKI_MEMORY_MAX_BLOB_BYTES": "0",
+            "WIKI_MEMORY_MAX_EVENTS_PER_APPEND": "1001",
+        }
+        with tempfile.TemporaryDirectory() as temporary:
+            for name, value in invalid.items():
+                with self.subTest(name=name), patch.dict("os.environ", {name: value}, clear=False):
+                    with self.assertRaisesRegex(MemoryError, name):
+                        create_app(_Repository(), FileObjectStore(Path(temporary) / name))
+
+    def test_rejects_malformed_team_connector_policy_during_startup(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary, patch.dict(
+            "os.environ", {"WIKI_MEMORY_TEAM_APPROVED_PLUGIN_IDS": "not-json"}, clear=False
+        ):
+            with self.assertRaisesRegex(MemoryError, "WIKI_MEMORY_TEAM_APPROVED_PLUGIN_IDS"):
+                create_app(_Repository(), FileObjectStore(Path(temporary) / "objects"))
+
+
+if __name__ == "__main__":
+    unittest.main()

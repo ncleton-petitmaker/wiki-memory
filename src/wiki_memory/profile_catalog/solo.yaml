@@ -1,0 +1,19 @@
+apiVersion: wiki-memory/v1
+id: solo
+requireSignatures: false
+trustedPlugins:
+  - projection-markdown
+  - search-qmd
+  - parser-docling
+  - sync-syncthing
+  - source-social-browser
+  - backup-local
+  - gateway-mcp
+plugins:
+  - projection-markdown
+  - search-qmd
+  - parser-docling
+  - sync-syncthing
+  - source-social-browser
+  - backup-local
+  - gateway-mcp

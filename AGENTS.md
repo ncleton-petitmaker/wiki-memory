@@ -2,7 +2,7 @@
 
 This repository contains a public, synthetic-only Codex plugin. Do not copy user vault contents, browser sessions, credentials, absolute home-directory paths, or customer information into this repository.
 
-Keep the plugin cross-platform. Runtime state belongs in the operating system's user-data directory, never inside a synchronized vault. Markdown files are the source of truth; indexes and derived caches must remain rebuildable.
+Keep the plugin cross-platform. Runtime caches, models, credentials, and indexes belong in the operating system's user-data directory. The append-only event ledger and content-addressed evidence are canonical; Markdown, QMD indexes, summaries, facts, and graphs are rebuildable projections. Syncthing may transport only immutable event packs and blobs, never a live SQLite database.
 
 Every durable end-user installation uses one root with exactly two sibling directories: `Agent/` for this public plugin and `Mémoire/` for the user's generated memory. Initialize the memory only in `Mémoire/`. When the user opts into Syncthing, configure `Agent/` and `Mémoire/` as two separate synchronized folders; keep runtimes, caches, indexes, browser state, and credentials outside both.
 

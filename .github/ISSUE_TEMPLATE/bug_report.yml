@@ -12,7 +12,7 @@ body:
     attributes:
       label: Wiki Memory version
       description: Run `wiki-memory --version` or read the installed plugin version.
-      placeholder: "0.2.0"
+      placeholder: "1.0.0-alpha.1"
     validations:
       required: true
   - type: dropdown
@@ -35,6 +35,9 @@ body:
         - Vault routing
         - Capture or ingestion
         - Search or QMD
+        - Plugin lifecycle or permissions
+        - Team, identity, ACL, or replication
+        - Audio or PostgreSQL connector
         - Social sync
         - Obsidian or Syncthing
         - Lint or Doctor

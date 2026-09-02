@@ -19,20 +19,20 @@ Supported automatic paths are Homebrew on macOS, WinGet on Windows, Flatpak for 
 
 Open each registered vault directory independently in Obsidian. Wiki Memory uses standard Markdown, YAML frontmatter, relative paths, and wikilinks; it does not require filesystem symlinks.
 
-The durable installation root contains sibling `Agent/` and `Mémoire/` directories. When synchronization is enabled, Wiki Memory registers both as separate Syncthing folders. `Mémoire/` includes raw sources, normalized source notes, media, Wiki notes, outputs, journals, and configuration. `Agent/` includes the public agent files. Runtime state stays outside both:
+The durable installation root contains sibling `Agent/` and `Mémoire/` directories. When synchronization is enabled, Wiki Memory registers `Agent/` and `Mémoire/.wiki-memory/data/` as separate Syncthing folders. The latter transports immutable blobs and event packs only; its ignore file excludes the live SQLite ledger and device outbox. Markdown is rebuilt independently on each device.
 
 ```bash
 wiki-memory syncthing-setup /path/to/installation/Mémoire
 wiki-memory syncthing-setup /path/to/installation/Mémoire --device-id OTHER-DEVICE-ID --device-name "Other device"
 ```
 
-The second device must accept both shared folders and select sibling local destinations named `Agent/` and `Mémoire/`. Do not claim setup is complete until both devices show both folders as connected or up to date.
+The second device accepts the agent folder and maps the transport folder into an initialized memory's `.wiki-memory/data/`. Import arriving packs only after their blobs are present, then rebuild projections. Do not claim setup complete until both transport folders are up to date and an import/verify succeeds.
 
 Syncthing does not synchronize `.stignore` itself. On every device:
 
-1. in both `Agent/` and `Mémoire/`, copy `syncthing.ignore.template` to `.stignore`;
+1. preserve the generated ignore files in `Agent/`, `Mémoire/`, and `.wiki-memory/data/`;
 2. preserve any device-specific additions;
 3. run `wiki-memory doctor <installation-root>/Mémoire`;
 4. enable Syncthing file versioning on at least one device or maintain a separate backup.
 
-The generated ignore rules exist only for sync-enabled memories and exclude browser profiles, authentication state, cookies, environment variables, logs, caches, Python environments, Node packages, SQLite indexes, QMD state, and local Obsidian workspace files.
+The generated rules exclude browser/auth state, secrets, logs, caches, environments, packages, QMD state, local Obsidian workspace files, SQLite, and outbox state. Never point Syncthing at `events.sqlite3` directly.

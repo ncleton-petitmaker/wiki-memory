@@ -1,0 +1,17 @@
+apiVersion: wiki-memory/v1
+id: transcriber-local
+version: 1.0.0
+minimumSdkVersion: 1.0.0
+runtime: python
+entrypoint: wiki_memory.builtin_plugins:transcriber_local
+provides: [transcription]
+requires: []
+permissions:
+  filesystem: [selected-files, runtime, configured-model]
+  network: []
+  secrets: []
+  subprocess: true
+  dataClasses: [audio, transcript]
+configSchema: config.schema.json
+healthCheck: services
+stopTimeoutSeconds: 300

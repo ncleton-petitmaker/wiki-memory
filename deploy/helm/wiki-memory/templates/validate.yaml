@@ -1,0 +1,36 @@
+{{- if empty .Values.image.digest -}}
+{{- fail "image.digest must be set to the signed release digest; mutable tags are not accepted" -}}
+{{- end -}}
+{{- if and .Values.postgresql.internal (or (empty .Values.postgresql.password) (eq .Values.postgresql.password "change-me-before-install")) -}}
+{{- fail "postgresql.password must be replaced before installing the internal PostgreSQL chart" -}}
+{{- end -}}
+{{- if and (not .Values.postgresql.internal) (empty .Values.postgresql.dsn) (empty .Values.secrets.existingSecret) -}}
+{{- fail "postgresql.dsn or secrets.existingSecret is required when postgresql.internal=false" -}}
+{{- end -}}
+{{- if and .Values.objectStore.internal (or (empty .Values.objectStore.secretKey) (eq .Values.objectStore.secretKey "change-me-before-install")) -}}
+{{- fail "objectStore.secretKey must be replaced before installing internal MinIO" -}}
+{{- end -}}
+{{- if and (not .Values.objectStore.internal) (empty .Values.objectStore.endpoint) -}}
+{{- fail "objectStore.endpoint is required when objectStore.internal=false" -}}
+{{- end -}}
+{{- if and (empty .Values.secrets.existingSecret) (or (empty .Values.restoreAttestationToken) (eq .Values.restoreAttestationToken "change-me-before-install")) -}}
+{{- fail "restoreAttestationToken must be replaced before installing" -}}
+{{- end -}}
+{{- if and (empty .Values.oidc.issuer) (empty .Values.bootstrapToken) (empty .Values.secrets.existingSecret) -}}
+{{- fail "configure oidc.issuer, a temporary bootstrapToken, or secrets.existingSecret" -}}
+{{- end -}}
+{{- if and .Values.networkPolicy.enabled (empty .Values.networkPolicy.apiIngress) -}}
+{{- fail "networkPolicy.apiIngress must explicitly name the TLS ingress/API-gateway peers" -}}
+{{- end -}}
+{{- if and .Values.networkPolicy.enabled (empty .Values.networkPolicy.dnsCIDRs) -}}
+{{- fail "networkPolicy.dnsCIDRs must explicitly name the cluster DNS service CIDR(s)" -}}
+{{- end -}}
+{{- if and .Values.networkPolicy.enabled (not .Values.postgresql.internal) (empty .Values.networkPolicy.postgresCIDRs) -}}
+{{- fail "networkPolicy.postgresCIDRs is required for external PostgreSQL" -}}
+{{- end -}}
+{{- if and .Values.networkPolicy.enabled (not .Values.objectStore.internal) (empty .Values.networkPolicy.objectStoreCIDRs) -}}
+{{- fail "networkPolicy.objectStoreCIDRs is required for an external object store" -}}
+{{- end -}}
+{{- if and .Values.networkPolicy.enabled (not (empty .Values.oidc.issuer)) (empty .Values.networkPolicy.oidcCIDRs) -}}
+{{- fail "networkPolicy.oidcCIDRs is required when OIDC is configured" -}}
+{{- end -}}

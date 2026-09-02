@@ -1,0 +1,16 @@
+apiVersion: wiki-memory/v1
+id: backup-local
+version: 1.0.0
+minimumSdkVersion: 1.0.0
+runtime: python
+entrypoint: wiki_memory.builtin_plugins:backup_local
+provides: [backup.local]
+requires: [events, evidence]
+permissions:
+  filesystem: [memory-root, selected-backup-destination]
+  network: []
+  secrets: []
+  dataClasses: [memory]
+configSchema: ../config-empty.schema.json
+healthCheck: services
+stopTimeoutSeconds: 300

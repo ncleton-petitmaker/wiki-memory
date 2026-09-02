@@ -1,0 +1,16 @@
+apiVersion: wiki-memory/v1
+id: gateway-mcp
+version: 1.0.0
+minimumSdkVersion: 1.0.0
+runtime: python
+entrypoint: wiki_memory.builtin_plugins:gateway_mcp
+provides: [gateway.mcp]
+requires: [memory-engine, events, evidence, projection.markdown, search]
+permissions:
+  filesystem: [memory-root, selected-files]
+  network: []
+  secrets: []
+  dataClasses: [memory]
+configSchema: config.schema.json
+healthCheck: services
+stopTimeoutSeconds: 30

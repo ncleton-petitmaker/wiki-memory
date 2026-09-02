@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wiki-memory.dev/schemas/source-message.schema.json",
+  "title": "Wiki Memory source connector message",
+  "type": "object",
+  "required": ["type", "stream", "emittedAt"],
+  "properties": {
+    "type": {"enum": ["record", "delete", "checkpoint", "schema-change", "warning"]},
+    "stream": {"type": "string", "minLength": 1},
+    "emittedAt": {"type": "string", "format": "date-time"},
+    "sourceId": {"type": ["string", "null"]},
+    "sourceVersion": {"type": ["string", "null"]},
+    "occurredAt": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "format": "date"},
+        {"type": "string", "format": "date-time"}
+      ]
+    },
+    "payload": {"type": ["object", "null"]},
+    "cursor": {},
+    "schema": {"type": ["object", "null"]},
+    "warning": {"type": ["string", "null"]},
+    "evidence": {"type": "array", "items": {"type": "string", "pattern": "^sha256:[0-9a-f]{64}$"}}
+  },
+  "allOf": [
+    {"if": {"properties": {"type": {"const": "record"}}}, "then": {"required": ["sourceId", "payload"]}},
+    {"if": {"properties": {"type": {"const": "delete"}}}, "then": {"required": ["sourceId"]}},
+    {"if": {"properties": {"type": {"const": "checkpoint"}}}, "then": {"required": ["cursor"]}},
+    {"if": {"properties": {"type": {"const": "schema-change"}}}, "then": {"required": ["schema"]}},
+    {"if": {"properties": {"type": {"const": "warning"}}}, "then": {"required": ["warning"]}}
+  ],
+  "additionalProperties": false
+}

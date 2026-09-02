@@ -11,7 +11,7 @@ Thank you for helping build a durable, local-first memory system. Contributions 
 
 ## Non-negotiable project rules
 
-1. Markdown and original files remain the durable source of truth.
+1. The append-only event ledger and content-addressed original evidence are canonical. Markdown is a portable, editable, rebuildable projection and must never be updated as if it were the ledger.
 2. Runtime state, models, indexes, credentials, and browser profiles stay outside vaults.
 3. Source captures are immutable; interpretations belong in the wiki layer.
 4. Folder names are resolved through `vault.yaml`, never hard-coded to one language.
@@ -28,7 +28,7 @@ cd wiki-memory
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-python -m pip install -e .
+python -m pip install -e '.[server,dev]'
 ```
 
 On Windows, create the environment with `py -3 -m venv .venv` and activate it with `.venv\Scripts\activate`.
@@ -46,7 +46,12 @@ Run before every pull request:
 ```bash
 python -m unittest discover -s tests -v
 python -m compileall -q src scripts tests
+python scripts/plugin_catalog.py
+python scripts/schema_validate.py
+python scripts/plugin_conformance.py
+python scripts/deployment_validate.py
 python scripts/privacy_scan.py .
+python -m pip_audit --skip-editable
 ```
 
 Also validate every changed skill with Codex's skill validator and validate the plugin manifest with the plugin validator when those tools are available.
@@ -54,10 +59,11 @@ Also validate every changed skill with Codex's skill validator and validate the 
 Test changes proportionally:
 
 - routing: existing, ambiguous, and new-vault cases;
-- ingestion: duplicate and meaningful-revision cases;
+- ingestion: duplicate, meaningful-revision, checkpoint, and tombstone cases;
 - paths: spaces, Unicode, macOS, Linux, and Windows conventions;
 - social capture: normalized synthetic payloads and every typed stop state;
-- sync: `.stignore`, local Obsidian state, and backup warnings;
+- sync: immutable event packs/blobs only, never a live SQLite database;
+- Team: ACL-before-search, review, offline outbox, and PostgreSQL replay cases;
 - security: no personal paths, tokens, cookies, or non-synthetic fixtures.
 
 ## Pull requests
