@@ -448,6 +448,12 @@ class TeamPostgresTests(unittest.TestCase):
         )
         self.assertEqual(unavailable_capture.status_code, 503, unavailable_capture.text)
         self.assertEqual(unavailable_capture.json()["detail"], "Evidence storage is unavailable")
+        malformed_before_storage = unavailable_client.post(
+            "/v1/captures",
+            headers=member,
+            json={"text": "reject before storage", "spaceId": space, "title": ["not", "a", "string"]},
+        )
+        self.assertEqual(malformed_before_storage.status_code, 422, malformed_before_storage.text)
         unavailable_proposal = unavailable_client.post(
             "/v1/proposals",
             headers=member,
@@ -477,6 +483,12 @@ class TeamPostgresTests(unittest.TestCase):
             with self.subTest(path=path):
                 malformed = client.post(path, headers=member, json=payload)
                 self.assertEqual(malformed.status_code, 422, malformed.text)
+        malformed_review = client.post(
+            "/v1/proposals/not-a-proposal/review",
+            headers=curator,
+            json={"decision": ["not", "a", "string"]},
+        )
+        self.assertEqual(malformed_review.status_code, 422, malformed_review.text)
         malformed_event = client.post(
             "/v1/events:append",
             headers=member,

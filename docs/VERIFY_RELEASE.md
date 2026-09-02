@@ -6,7 +6,7 @@ not require a vault, an OIDC token, or any production credential.
 
 ```bash
 repo=ncleton-petitmaker/wiki-memory
-tag=v1.0.0-alpha.21 # replace with the exact release you intend to use
+tag=v1.0.0-alpha.22 # replace with the exact release you intend to use
 directory="$(mktemp -d)"
 
 gh release download "$tag" --repo "$repo" --dir "$directory"

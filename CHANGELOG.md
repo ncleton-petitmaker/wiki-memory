@@ -4,6 +4,12 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.22] - 2026-09-02
+
+### Reliability
+
+- Apply the same side-effect-free request validation to Team restore attestations, replication heartbeats, and curator reviews; malformed input is rejected before repository access.
+
 ## [1.0.0-alpha.21] - 2026-09-02
 
 ### Reliability
@@ -191,7 +197,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.21...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.22...HEAD
+[1.0.0-alpha.22]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.22
 [1.0.0-alpha.21]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.21
 [1.0.0-alpha.20]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.20
 [1.0.0-alpha.19]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.19

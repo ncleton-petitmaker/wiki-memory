@@ -858,8 +858,10 @@ def create_app(
         if not attestation or not secrets.compare_digest(attestation, restore_attestation_token):
             raise HTTPException(status_code=403, detail="Valid restore attestation token required")
         payload = await json_body(request)
-        status = str(payload.get("status") or "")
-        backup_id = str(payload["backupId"]) if payload.get("backupId") is not None else None
+        status = required_string(payload, "status")
+        if status not in {"success", "failed"}:
+            raise HTTPException(status_code=422, detail="status must be success or failed")
+        backup_id = optional_string(payload, "backupId")
         if backup_id is not None and (not backup_id.strip() or len(backup_id) > 200):
             raise HTTPException(status_code=422, detail="backupId must be a non-empty identifier under 200 characters")
 
@@ -877,8 +879,8 @@ def create_app(
                 raise HTTPException(status_code=422, detail=f"{field} must be a non-negative integer")
             return parsed
 
-        detail = payload.get("detail") or {}
-        if not isinstance(detail, dict) or len(json.dumps(detail, ensure_ascii=False)) > 4096:
+        detail = object_value(payload, "detail")
+        if len(json.dumps(detail, ensure_ascii=False)) > 4096:
             raise HTTPException(status_code=422, detail="detail must be a JSON object under 4 KiB")
         recorded = repository.record_restore_verification(
             user.id,
@@ -904,7 +906,7 @@ def create_app(
         if not user.has_any_role(Role.ADMIN, Role.CURATOR, Role.CONTRIBUTOR, Role.SERVICE):
             raise HTTPException(status_code=403, detail="Replication status requires a contributing identity")
         payload = await json_body(request)
-        client_id = str(payload.get("clientId") or "")
+        client_id = required_string(payload, "clientId")
         if not re.fullmatch(r"[a-f0-9]{32,64}", client_id):
             raise HTTPException(status_code=422, detail="clientId must be a privacy-preserving hexadecimal fingerprint")
 
@@ -937,6 +939,9 @@ def create_app(
         request: Request,
         user: Principal = Depends(require_curator),
     ) -> dict[str, Any]:
+        payload = await json_body(request)
+        decision = required_string(payload, "decision")
+        review_reason = optional_string(payload, "reason")
         proposal = repository.get_event(proposal_id)
         if proposal is None or proposal.event_type not in {
             "assertion.proposed", "projection.edit.proposed", "source.publication.proposed"
@@ -944,8 +949,6 @@ def create_app(
             raise HTTPException(status_code=404, detail="Proposal not found")
         if not can_read(user, scope=proposal.scope, space_id=proposal.space_id, acl=proposal.acl):
             raise HTTPException(status_code=403, detail="Proposal is outside authorized spaces")
-        payload = await json_body(request)
-        decision = str(payload.get("decision") or "")
         if proposal.event_type == "projection.edit.proposed":
             prefix = "projection.edit"
         elif proposal.event_type == "source.publication.proposed":
@@ -1027,7 +1030,7 @@ def create_app(
                 "status": event_type.rsplit(".", 1)[1],
                 "proposalEventId": proposal.event_id,
                 "reviewedBy": user.id,
-                "reviewReason": payload.get("reason"),
+                "reviewReason": review_reason,
             },
             causation_id=proposal.event_id,
         )
