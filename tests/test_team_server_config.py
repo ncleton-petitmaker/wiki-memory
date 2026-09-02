@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import tempfile
 import unittest
 from pathlib import Path
@@ -12,11 +13,15 @@ from wiki_memory.object_store import FileObjectStore
 from wiki_memory.team_server import create_app
 
 
+HAS_TEAM_SERVER = bool(importlib.util.find_spec("fastapi"))
+
+
 class _Repository:
     def initialize(self) -> None:
         return None
 
 
+@unittest.skipUnless(HAS_TEAM_SERVER, "Team server test dependencies are not installed")
 class TeamServerConfigurationTests(unittest.TestCase):
     def test_rejects_invalid_request_limits_during_startup(self) -> None:
         invalid = {

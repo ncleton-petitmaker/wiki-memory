@@ -10,6 +10,9 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
   hosted runner, instead of an undeclared `rg` dependency.
 - Quote the PostgreSQL service port mappings so the workflow files are valid
   portable YAML as well as GitHub Actions configuration.
+- Run Team-server configuration tests only where the optional `server` bundle
+  is installed; the Team integration job continues to execute them with the
+  real dependency set.
 
 ## [1.0.0-alpha.2] - 2026-09-02
 
