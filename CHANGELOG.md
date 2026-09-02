@@ -4,6 +4,13 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.3] - 2026-09-02
+
+- Fix release and CI Helm assertions to use POSIX `grep`, available on every
+  hosted runner, instead of an undeclared `rg` dependency.
+- Quote the PostgreSQL service port mappings so the workflow files are valid
+  portable YAML as well as GitHub Actions configuration.
+
 ## [1.0.0-alpha.2] - 2026-09-02
 
 ### Added
@@ -57,7 +64,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.2...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.3...HEAD
+[1.0.0-alpha.3]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.3
 [1.0.0-alpha.2]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.2
 [1.0.0-alpha.1]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.1
 [0.0.0]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v0.0.0

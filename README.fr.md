@@ -2,7 +2,7 @@
 
 Wiki Memory est un moteur de mémoire MIT, local-first, self-hosted et extensible par plugins. Il fonctionne seul, hors ligne, sans compte. Le bundle optionnel `team` ajoute OIDC, espaces partagés, ACL, revue, audit et réplication ; il n’est jamais une dépendance du mode solo.
 
-Version actuelle : `1.0.0-alpha.2`. La fondation V1 est exécutable, mais le tag stable `1.0.0` reste conditionné à des preuves de restauration sur l’infrastructure de production et à un audit externe. Les preuves locales exactes sont consignées dans [Évidence de release](docs/RELEASE_EVIDENCE.md).
+Version actuelle : `1.0.0-alpha.3`. La fondation V1 est exécutable, mais le tag stable `1.0.0` reste conditionné à des preuves de restauration sur l’infrastructure de production et à un audit externe. Les preuves locales exactes sont consignées dans [Évidence de release](docs/RELEASE_EVIDENCE.md).
 
 ## Ce qui est canonique
 

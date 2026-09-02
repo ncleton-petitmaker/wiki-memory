@@ -31,7 +31,7 @@ jobs:
           POSTGRES_DB: wiki_memory_release_test
           POSTGRES_USER: wiki_memory
           POSTGRES_PASSWORD: synthetic-test-password
-        ports: [5432:5432]
+        ports: ["5432:5432"]
         options: >-
           --health-cmd "pg_isready -U wiki_memory -d wiki_memory_release_test"
           --health-interval 5s --health-timeout 5s --health-retries 20
@@ -64,9 +64,9 @@ jobs:
           helm template wiki-memory-internal deploy/helm/wiki-memory --namespace wiki-memory-release
           --values deploy/helm/wiki-memory/values.internal-ci.yaml > "$RUNNER_TEMP/wiki-memory-internal-rendered.yaml"
       - run: |
-          rg --fixed-strings 'kind: NetworkPolicy' "$RUNNER_TEMP/wiki-memory-rendered.yaml"
+          grep --fixed-strings 'kind: NetworkPolicy' "$RUNNER_TEMP/wiki-memory-rendered.yaml"
       - run: |
-          rg --fixed-strings 'minio-init' "$RUNNER_TEMP/wiki-memory-internal-rendered.yaml"
+          grep --fixed-strings 'minio-init' "$RUNNER_TEMP/wiki-memory-internal-rendered.yaml"
       - run: uv run --frozen python scripts/privacy_scan.py .
       - name: PostgreSQL WAL recovery rehearsal
         run: |

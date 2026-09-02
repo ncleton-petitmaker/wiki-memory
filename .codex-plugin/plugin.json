@@ -1,6 +1,6 @@
 {
   "name": "wiki-memory",
-  "version": "1.0.0-alpha.2",
+  "version": "1.0.0-alpha.3",
   "description": "Construire et entretenir une mémoire Markdown locale, structurée et reliée à ses sources.",
   "author": {
     "name": "Petitmaker",
