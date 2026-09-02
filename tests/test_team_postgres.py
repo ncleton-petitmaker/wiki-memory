@@ -440,6 +440,22 @@ class TeamPostgresTests(unittest.TestCase):
         self.assertNotIn("sessionStorage", script.text)
 
         self.assertEqual(client.get("/metrics", headers=outsider).status_code, 403)
+        malformed_event = client.post(
+            "/v1/events:append",
+            headers=member,
+            json={
+                "events": [
+                    {
+                        "eventType": "source.captured",
+                        "streamId": f"malformed:{self.run_id}",
+                        "idempotencyKey": f"malformed:{self.run_id}",
+                        "actor": [],
+                    }
+                ]
+            },
+        )
+        self.assertEqual(malformed_event.status_code, 400, malformed_event.text)
+        self.assertEqual(malformed_event.json()["error"], "Invalid event object.")
         malformed_proposal = client.post(
             "/v1/proposals",
             headers=member,

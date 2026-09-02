@@ -326,6 +326,34 @@ class V1Tests(unittest.TestCase):
         with self.assertRaises(MemoryError):
             engine.append(MemoryEvent(payload={"value": 2}, **base))
 
+    def test_untrusted_event_shapes_raise_memory_error_not_python_type_errors(self) -> None:
+        valid = MemoryEvent(
+            event_type="test.recorded",
+            stream_id="test:untrusted-shape",
+            idempotency_key="untrusted-shape",
+            actor=EventActor("system", "test"),
+            plugin=PluginRef("test", "1.0.0"),
+            payload={},
+        ).to_dict()
+        malformed = []
+        for field, value in (
+            ("actor", []),
+            ("plugin", "not-an-object"),
+            ("payload", ["not", "an", "object"]),
+            ("acl", ["not", "an", "object"]),
+            ("evidenceRefs", None),
+            ("occurredAt", ["not", "a", "timestamp"]),
+        ):
+            candidate = dict(valid)
+            candidate[field] = value
+            malformed.append(candidate)
+        malformed.append({"eventType": "test.recorded"})
+
+        for candidate in malformed:
+            with self.subTest(candidate=candidate):
+                with self.assertRaises(MemoryError):
+                    MemoryEvent.from_dict(candidate)
+
     def test_concurrent_solo_captures_leave_projection_and_checkpoint_consistent(self) -> None:
         def capture(index: int):
             return capture_item(

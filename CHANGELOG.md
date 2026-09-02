@@ -4,6 +4,12 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.17] - 2026-09-02
+
+### Fixed
+
+- Convert malformed event JSON from replication clients and import packs into controlled validation errors; Team never exposes a Python type error for invalid event shapes.
+
 ## [1.0.0-alpha.16] - 2026-09-02
 
 ### Fixed
@@ -161,7 +167,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.16...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.17...HEAD
+[1.0.0-alpha.17]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.17
 [1.0.0-alpha.16]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.16
 [1.0.0-alpha.15]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.15
 [1.0.0-alpha.14]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.14

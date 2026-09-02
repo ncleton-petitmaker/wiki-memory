@@ -188,28 +188,43 @@ class MemoryEvent:
 
     @classmethod
     def from_dict(cls, value: dict[str, Any]) -> "MemoryEvent":
-        event = cls(
-            event_id=str(value.get("eventId") or uuid7()),
-            event_type=str(value["eventType"]),
-            schema_version=int(value.get("schemaVersion", 1)),
-            stream_id=str(value["streamId"]),
-            stream_version=int(value.get("streamVersion", 0)),
-            idempotency_key=str(value["idempotencyKey"]),
-            scope=str(value.get("scope", "private")),  # type: ignore[arg-type]
-            space_id=str(value.get("spaceId", "local-owner")),
-            actor=EventActor(**value.get("actor", {"type": "system", "id": "wiki-memory"})),
-            occurred_at=value.get("occurredAt"),
-            recorded_at=str(value.get("recordedAt") or utc_now()),
-            correlation_id=value.get("correlationId"),
-            causation_id=value.get("causationId"),
-            plugin=PluginRef(**value.get("plugin", {"id": "core", "version": "1.0.0"})),
-            evidence_refs=[str(item) for item in value.get("evidenceRefs", [])],
-            acl=dict(value.get("acl") or {}),
-            payload=dict(value.get("payload") or {}),
-            position=int(value["position"]) if value.get("position") is not None else None,
-            event_hash=value.get("eventHash"),
-        )
-        event.validate()
+        """Deserialize an untrusted event without leaking implementation errors.
+
+        HTTP replication accepts JSON from clients and imported packs can be
+        corrupted.  Every malformed shape must become ``MemoryError`` so the
+        API returns its controlled client error rather than a Python
+        ``TypeError`` or ``AttributeError``.
+        """
+
+        if not isinstance(value, dict):
+            raise MemoryError("Event must be an object.")
+        try:
+            event = cls(
+                event_id=str(value.get("eventId") or uuid7()),
+                event_type=str(value["eventType"]),
+                schema_version=int(value.get("schemaVersion", 1)),
+                stream_id=str(value["streamId"]),
+                stream_version=int(value.get("streamVersion", 0)),
+                idempotency_key=str(value["idempotencyKey"]),
+                scope=str(value.get("scope", "private")),  # type: ignore[arg-type]
+                space_id=str(value.get("spaceId", "local-owner")),
+                actor=EventActor(**value.get("actor", {"type": "system", "id": "wiki-memory"})),
+                occurred_at=value.get("occurredAt"),
+                recorded_at=str(value.get("recordedAt") or utc_now()),
+                correlation_id=value.get("correlationId"),
+                causation_id=value.get("causationId"),
+                plugin=PluginRef(**value.get("plugin", {"id": "core", "version": "1.0.0"})),
+                evidence_refs=[str(item) for item in value.get("evidenceRefs", [])],
+                acl=dict(value.get("acl") or {}),
+                payload=dict(value.get("payload") or {}),
+                position=int(value["position"]) if value.get("position") is not None else None,
+                event_hash=value.get("eventHash"),
+            )
+            event.validate()
+        except MemoryError:
+            raise
+        except (AttributeError, KeyError, TypeError, ValueError) as exc:
+            raise MemoryError("Invalid event object.") from exc
         return event
 
 
