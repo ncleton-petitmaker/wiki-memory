@@ -11,10 +11,11 @@ jobs:
   release-gate:
     runs-on: ubuntu-latest
     # Configure `stable-release` with required reviewers. GitHub exposes the
-    # two evidence variables only after that approval; alpha/beta tags use an
+    # three evidence variables only after that approval; alpha/beta tags use an
     # unprotected prerelease environment and cannot claim stable status.
     environment: ${{ contains(github.ref_name, '-') && 'prerelease' || 'stable-release' }}
     env:
+      WIKI_MEMORY_PERFORMANCE_EVIDENCE: ${{ vars.WIKI_MEMORY_PERFORMANCE_EVIDENCE }}
       WIKI_MEMORY_PRODUCTION_RECOVERY_EVIDENCE: ${{ vars.WIKI_MEMORY_PRODUCTION_RECOVERY_EVIDENCE }}
       WIKI_MEMORY_EXTERNAL_AUDIT_EVIDENCE: ${{ vars.WIKI_MEMORY_EXTERNAL_AUDIT_EVIDENCE }}
     steps:

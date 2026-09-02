@@ -13,10 +13,11 @@ class ReleaseGateTests(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(report["kind"], "prerelease")
 
-    def test_stable_release_requires_two_reviewable_evidence_links(self) -> None:
+    def test_stable_release_requires_three_reviewable_evidence_links(self) -> None:
         ok, report = gate("v1.0.0", {})
         self.assertFalse(ok)
         self.assertEqual(set(report["missingOrInvalidEvidence"]), {
+            "WIKI_MEMORY_PERFORMANCE_EVIDENCE",
             "WIKI_MEMORY_PRODUCTION_RECOVERY_EVIDENCE",
             "WIKI_MEMORY_EXTERNAL_AUDIT_EVIDENCE",
         })
@@ -24,6 +25,7 @@ class ReleaseGateTests(unittest.TestCase):
         ok, report = gate(
             "v1.0.0",
             {
+                "WIKI_MEMORY_PERFORMANCE_EVIDENCE": "https://evidence.example/performance/wiki-memory-v1",
                 "WIKI_MEMORY_PRODUCTION_RECOVERY_EVIDENCE": "https://evidence.example/recovery/2026-09-02",
                 "WIKI_MEMORY_EXTERNAL_AUDIT_EVIDENCE": "https://audit.example/reports/wiki-memory-v1",
             },

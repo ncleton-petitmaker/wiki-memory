@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 
 SEMVER_TAG = re.compile(r"^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(?:-([0-9A-Za-z.-]+))?$")
 EVIDENCE_VARIABLES = (
+    "WIKI_MEMORY_PERFORMANCE_EVIDENCE",
     "WIKI_MEMORY_PRODUCTION_RECOVERY_EVIDENCE",
     "WIKI_MEMORY_EXTERNAL_AUDIT_EVIDENCE",
 )
