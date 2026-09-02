@@ -33,6 +33,9 @@ postgresql:
   dsn: ""
   password: change-me-before-install
   storage: 20Gi
+  # Connector streams open short-lived database transactions. Leave headroom
+  # above the 100-stream operational target for API, workers and maintenance.
+  maxConnections: 256
 objectStore:
   internal: true
   endpoint: ""
