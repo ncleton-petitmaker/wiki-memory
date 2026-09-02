@@ -1,0 +1,9 @@
+# Plugin manifests are hash-addressed by the signed official catalog.  They
+# must retain identical bytes on every checkout, including Windows.
+src/wiki_memory/plugin_catalog/**/plugin.yaml text eol=lf
+src/wiki_memory/plugin_catalog/**/*.json text eol=lf
+src/wiki_memory/plugin_catalog/catalog.json text eol=lf
+src/wiki_memory/profile_catalog/*.yaml text eol=lf
+
+# Workflows are also consumed by multiple YAML parsers and shells.
+.github/workflows/*.yml text eol=lf

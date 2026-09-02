@@ -1021,6 +1021,17 @@ for line in sys.stdin:
             encoding="utf-8",
         )
         runtime.chmod(0o700)
+        runtime_command = runtime
+        if os.name == "nt":
+            # Windows does not execute a shebang script directly.  The
+            # production OCI runtime is an .exe, but this test double needs a
+            # small .cmd bridge so it exercises the same argument contract.
+            wrapper = Path(self.temp.name) / "fake-oci-runtime.cmd"
+            wrapper.write_text(
+                f'@echo off\r\n"{sys.executable}" "{runtime}" %*\r\n',
+                encoding="utf-8",
+            )
+            runtime_command = wrapper
         manifest = PluginManifest.from_dict(
             {
                 "apiVersion": "wiki-memory/v1",
@@ -1037,7 +1048,7 @@ for line in sys.stdin:
             },
             ROOT / "src/wiki_memory/plugin_catalog/parser-docling/plugin.yaml",
         )
-        with patch.dict(os.environ, {"WIKI_MEMORY_OCI_RUNTIME": str(runtime)}):
+        with patch.dict(os.environ, {"WIKI_MEMORY_OCI_RUNTIME": str(runtime_command)}):
             manager = PluginManager(trusted_plugins={manifest.id})
             manager.add(manifest, {})
             asyncio.run(manager.activate_all())

@@ -57,11 +57,28 @@ def ensure_root(path: str | Path) -> Path:
 
 
 def safe_child(root: Path, relative: str | Path) -> Path:
-    child = (root / relative).resolve()
+    """Resolve a user-controlled child without permitting traversal or symlink escape.
+
+    ``Path.relative_to`` has historically disagreed with Windows drive/case
+    normalization for a not-yet-created nested path.  Compare normalized OS
+    paths instead, after resolving existing symlinks, so a valid content
+    address works on Windows while a drive, ``..`` segment, or symlink escape
+    remains fail-closed everywhere.
+    """
+
+    root = root.resolve()
+    requested = Path(relative)
+    if requested.is_absolute() or ".." in requested.parts:
+        raise MemoryError(f"Path escapes memory root: {relative}")
+    child = (root / requested).resolve()
+    normalized_root = os.path.normcase(os.path.normpath(str(root)))
+    normalized_child = os.path.normcase(os.path.normpath(str(child)))
     try:
-        child.relative_to(root.resolve())
-    except ValueError as exc:
+        common = os.path.normcase(os.path.normpath(os.path.commonpath([normalized_root, normalized_child])))
+    except ValueError as exc:  # different drives on Windows
         raise MemoryError(f"Path escapes memory root: {relative}") from exc
+    if common != normalized_root:
+        raise MemoryError(f"Path escapes memory root: {relative}")
     return child
 
 
