@@ -20,6 +20,11 @@ class EvidenceIntegrityTests(unittest.TestCase):
         directory = Path(__file__).resolve().parents[1] / "docs" / "evidence"
         self.assertEqual(verify(directory), [])
 
+    def test_evidence_line_endings_are_pinned_for_byte_level_checksums(self) -> None:
+        attributes = (Path(__file__).resolve().parents[1] / ".gitattributes").read_text(encoding="utf-8")
+        self.assertIn("docs/evidence/*.json text eol=lf", attributes)
+        self.assertIn("docs/evidence/SHA256SUMS text eol=lf", attributes)
+
     def test_rejects_tampered_or_unlisted_report(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)

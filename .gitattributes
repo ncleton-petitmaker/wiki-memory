@@ -5,5 +5,10 @@ src/wiki_memory/plugin_catalog/**/*.json text eol=lf
 src/wiki_memory/plugin_catalog/catalog.json text eol=lf
 src/wiki_memory/profile_catalog/*.yaml text eol=lf
 
+# Release evidence is verified byte-for-byte against SHA256SUMS.  Git must not
+# rewrite the final newline when a Windows runner checks out the repository.
+docs/evidence/*.json text eol=lf
+docs/evidence/SHA256SUMS text eol=lf
+
 # Workflows are also consumed by multiple YAML parsers and shells.
 .github/workflows/*.yml text eol=lf
