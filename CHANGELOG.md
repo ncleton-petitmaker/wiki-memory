@@ -18,6 +18,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Keep content-addressed evidence and search-result path identifiers portable
   across Windows, macOS, and Linux; Team entitlement filtering is therefore
   tested against the same public path contract everywhere.
+- Publish concurrent local evidence with atomic create-only semantics, while
+  retaining verified repair of a corrupted canonical blob on Windows.
 - Audit the frozen project dependency graph rather than mutable runner tooling.
 
 ## [1.0.0-alpha.2] - 2026-09-02

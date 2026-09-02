@@ -4,6 +4,7 @@ import hashlib
 import os
 import shutil
 import tempfile
+import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import BinaryIO, Iterator
@@ -89,6 +90,7 @@ class FileObjectStore(ObjectStore):
         verify_digest(path, digest)
         target = self._path(digest)
         target.parent.mkdir(parents=True, exist_ok=True)
+        replacing_corrupt_target = False
         if target.exists():
             try:
                 verify_digest(target, digest)
@@ -97,7 +99,7 @@ class FileObjectStore(ObjectStore):
                 # The key is canonical but storage can still suffer bit rot.
                 # The caller supplied independently verified bytes, so replace
                 # atomically instead of perpetuating the corrupt object.
-                pass
+                replacing_corrupt_target = True
         # A digest may be submitted by several connectors at once.  A fixed
         # ``.tmp`` name makes otherwise harmless concurrent uploads race.  A
         # unique file in the destination directory preserves atomic replace
@@ -115,7 +117,32 @@ class FileObjectStore(ObjectStore):
             # Verify the exact bytes that will become canonical.  This also
             # protects against a source file changing after its initial hash.
             verify_digest(temporary, digest)
-            os.replace(temporary, target)
+            if replacing_corrupt_target:
+                # Repair is the only path allowed to replace a canonical name.
+                # A reader can transiently lock it on Windows; another repairer
+                # may also win while we wait, so verify after each failed try.
+                for attempt in range(8):
+                    try:
+                        os.replace(temporary, target)
+                        break
+                    except PermissionError:
+                        try:
+                            verify_digest(target, digest)
+                            break
+                        except (MemoryError, OSError):
+                            if attempt == 7:
+                                raise
+                            time.sleep(min(0.01 * (2**attempt), 0.25))
+            else:
+                # Publish without replacing an existing canonical blob.
+                # ``replace`` is safe on POSIX but Windows rejects it while a
+                # concurrent reader hashes the already-published object. A
+                # same-filesystem hard link is atomic and create-only: one
+                # uploader wins; the others verify the winner.
+                try:
+                    os.link(temporary, target)
+                except FileExistsError:
+                    verify_digest(target, digest)
             if os.name != "nt":
                 directory_descriptor = os.open(target.parent, os.O_RDONLY)
                 try:

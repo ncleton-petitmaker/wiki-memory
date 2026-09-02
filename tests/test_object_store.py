@@ -39,3 +39,19 @@ class FileObjectStoreTests(unittest.TestCase):
             self.assertTrue(store.verify(digest))
             self.assertEqual(list((root / "objects").rglob("*.tmp")), [])
 
+    def test_verified_upload_repairs_a_corrupt_canonical_blob(self) -> None:
+        """Create-only publication must not weaken the bit-rot repair path."""
+
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source = root / "source.txt"
+            source.write_bytes(b"canonical evidence\n")
+            digest = hashlib.sha256(source.read_bytes()).hexdigest()
+            store = FileObjectStore(root / "objects")
+            store.put_file(digest, source, "text/plain")
+            store._path(digest).write_bytes(b"corrupt")
+
+            self.assertFalse(store.verify(digest))
+            store.put_file(digest, source, "text/plain")
+
+            self.assertTrue(store.verify(digest))
