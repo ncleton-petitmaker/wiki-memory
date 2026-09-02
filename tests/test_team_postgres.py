@@ -25,7 +25,15 @@ from wiki_memory.layout import init_memory
 from wiki_memory.object_store import FileObjectStore
 from wiki_memory.operations import publication_preview, publish_private_event
 from wiki_memory.postgres_source import PostgresSourceConnector
-from wiki_memory.team import Principal, Role, TeamClient, can_read, normalize_acl, shared_vault_slug
+from wiki_memory.team import (
+    Principal,
+    Role,
+    TeamClient,
+    can_read,
+    ensure_team_vault,
+    normalize_acl,
+    shared_vault_slug,
+)
 from wiki_memory.team_repository import PostgresTeamRepository
 from wiki_memory.team_server import create_app, database_dsn_from_environment
 
@@ -723,6 +731,84 @@ class TeamPostgresTests(unittest.TestCase):
         assert accepted_local is not None
         self.assertEqual(accepted_local.scope, "organization")
         self.assertEqual(api.get(f"/v1/blobs/{digest}", headers=outsider).status_code, 200)
+
+    def test_team_client_sync_accepts_official_service_connector(self) -> None:
+        """An approved connector identity can durably replicate its own local outbox.
+
+        This covers the route used by a `team-client` source plugin: source evidence
+        is first committed locally, then its service OIDC identity uploads the blob
+        and event.  A human token must not be able to impersonate that actor (tested
+        separately above); this test proves the legitimate path remains usable.
+        """
+
+        from fastapi.testclient import TestClient
+
+        space = f"{self.space}-service-sync"
+
+        class Tokens:
+            def verify(self, token: str) -> Principal:
+                if token != "connector-service":
+                    raise KeyError(token)
+                return Principal(
+                    "connector-service",
+                    frozenset({Role.SERVICE}),
+                    frozenset({space}),
+                    kind="service",
+                )
+
+        api = TestClient(create_app(self.repository, self.object_store, Tokens()))
+
+        class InProcessTeamClient(TeamClient):
+            def _request(self, method, path, *, body=None, content_type=None):
+                headers = {"Authorization": "Bearer connector-service"}
+                if content_type:
+                    headers["Content-Type"] = content_type
+                response = api.request(method, path, content=body, headers=headers)
+                if method == "HEAD" and response.status_code == 404:
+                    return 404, b"", dict(response.headers)
+                if response.status_code >= 400:
+                    raise MemoryError(f"in-process Team returned HTTP {response.status_code}: {response.text}")
+                return response.status_code, response.content, dict(response.headers)
+
+        local_root = Path(self.temporary.name) / f"service-client-{self.run_id}"
+        init_memory(
+            local_root,
+            {
+                "name": "Service connector client",
+                "language": "en",
+                "sync_enabled": False,
+                "vaults": [{"slug": "knowledge", "title": "Knowledge", "purpose": "Synthetic tests"}],
+            },
+        )
+        local = MemoryEngine(local_root)
+        vault = ensure_team_vault(local_root, space)
+        evidence = local.evidence.put_bytes(b"official connector sync", media_type="text/plain")
+        source_event = MemoryEvent(
+            event_type="source.captured",
+            stream_id=f"connector:{self.run_id}:replication",
+            idempotency_key=f"connector-replication-{self.run_id}",
+            actor=EventActor("connector", "connector-service"),
+            plugin=PluginRef("source-postgres", "1.0.0"),
+            scope="team",
+            space_id=space,
+            evidence_refs=[evidence.reference],
+            acl=normalize_acl({}, owner="connector-service", space_id=space),
+            payload={"vault": vault, "sourceId": f"postgres-{self.run_id}", "body": "official connector sync"},
+        )
+        persisted, created = local.append(source_event)
+        self.assertTrue(created)
+        self.assertEqual(local.events.outbox_status_counts(), {"pending": 1})
+
+        report = InProcessTeamClient(local, "https://team.invalid", lambda: "connector-service").sync()
+        self.assertTrue(report["ok"], report)
+        self.assertEqual(report["pushed"], 1)
+        self.assertTrue(report["heartbeatReported"], report)
+        self.assertEqual(local.events.outbox_status_counts(), {"accepted": 1})
+        remote = self.repository.get_event(persisted.event_id)
+        assert remote is not None
+        self.assertEqual(remote.actor, EventActor("connector", "connector-service"))
+        self.assertEqual(remote.plugin, PluginRef("source-postgres", "1.0.0"))
+        self.assertTrue(self.object_store.has(evidence.reference.split(":", 1)[1]))
 
     def test_postgres_source_refuses_privileged_role_and_replays_overlap_idempotently(self) -> None:
         import psycopg
