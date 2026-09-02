@@ -4,6 +4,12 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.19] - 2026-09-02
+
+### Reliability
+
+- Fail Team evidence reads and writes closed with a generic `503` when object storage is unavailable, rather than leaking a provider failure as an internal error or leaving a client uncertain about acceptance.
+
 ## [1.0.0-alpha.18] - 2026-09-02
 
 ### Reliability
@@ -173,7 +179,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.18...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.19...HEAD
+[1.0.0-alpha.19]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.19
 [1.0.0-alpha.18]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.18
 [1.0.0-alpha.17]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.17
 [1.0.0-alpha.16]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.16

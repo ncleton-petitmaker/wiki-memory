@@ -233,6 +233,31 @@ def create_app(
             raise HTTPException(status_code=422, detail="JSON request must be an object")
         return value
 
+    def verify_object(digest: str) -> bool:
+        """Verify evidence without exposing an object-store outage as a 500.
+
+        A false return is a normal missing/corrupt object. A provider failure
+        is operationally distinct: clients must retry later, never infer that
+        evidence is absent or that their Team contribution was accepted.
+        """
+
+        try:
+            return object_store.verify(digest)
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail="Evidence storage is unavailable") from exc
+
+    def put_object(digest: str, source: Path, media_type: str) -> None:
+        try:
+            object_store.put_file(digest, source, media_type)
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail="Evidence storage is unavailable") from exc
+
+    def open_object(digest: str):
+        try:
+            return object_store.open(digest)
+        except Exception as exc:
+            raise HTTPException(status_code=503, detail="Evidence storage is unavailable") from exc
+
     def validated_evidence_references(value: Any) -> list[str]:
         """Validate untrusted proposal references before ACL or object-store work.
 
@@ -462,7 +487,7 @@ def create_app(
 
     @app.head("/v1/blobs/{digest}")
     def head_blob(digest: str, user: Principal = Depends(principal)) -> Response:
-        if not object_store.verify(digest.lower()):
+        if not verify_object(digest.lower()):
             return Response(status_code=404)
         references = repository.events_referencing_blob(digest.lower())
         visible = any(can_read(user, scope=event.scope, space_id=event.space_id, acl=event.acl) for event in references)
@@ -488,7 +513,7 @@ def create_app(
                 os.fsync(handle.fileno())
             if hasher.hexdigest() != digest:
                 raise HTTPException(status_code=422, detail="Blob checksum mismatch")
-            object_store.put_file(digest, Path(temporary_name), request.headers.get("content-type", "application/octet-stream"))
+            put_object(digest, Path(temporary_name), request.headers.get("content-type", "application/octet-stream"))
         finally:
             Path(temporary_name).unlink(missing_ok=True)
         return {"ok": True, "reference": f"sha256:{digest}"}
@@ -520,7 +545,7 @@ def create_app(
                 handle.write(content)
                 handle.flush()
                 os.fsync(handle.fileno())
-            object_store.put_file(digest, Path(temporary_name), "application/json")
+            put_object(digest, Path(temporary_name), "application/json")
         finally:
             Path(temporary_name).unlink(missing_ok=True)
         source_id = digest[:16]
@@ -566,12 +591,12 @@ def create_app(
 
     @app.get("/v1/blobs/{digest}")
     def get_blob(digest: str, user: Principal = Depends(principal)):
-        if not object_store.verify(digest.lower()):
+        if not verify_object(digest.lower()):
             raise HTTPException(status_code=404, detail="Blob not found")
         references = repository.events_referencing_blob(digest.lower())
         if not any(can_read(user, scope=event.scope, space_id=event.space_id, acl=event.acl) for event in references):
             raise HTTPException(status_code=403, detail="Blob is outside authorized spaces")
-        handle = object_store.open(digest.lower())
+        handle = open_object(digest.lower())
         return StreamingResponse(stream_and_close(handle), media_type="application/octet-stream")
 
     @app.post("/v1/events:append")
@@ -642,7 +667,7 @@ def create_app(
                     raise HTTPException(status_code=422, detail="Proposal ACL is broader than its evidence ACL")
             elif event.evidence_refs:
                 validate_reused_evidence_acl(user, event)
-            missing = [ref for ref in event.evidence_refs if not object_store.verify(ref.split(":", 1)[1])]
+            missing = [ref for ref in event.evidence_refs if not verify_object(ref.split(":", 1)[1])]
             if missing:
                 raise HTTPException(status_code=409, detail={"missingEvidence": missing})
             try:
@@ -984,7 +1009,7 @@ def create_app(
         if not can_contribute(user, space_id):
             raise HTTPException(status_code=403, detail="Cannot contribute to this space")
         evidence_refs = validated_evidence_references(payload.get("evidenceRefs", []))
-        missing = [ref for ref in evidence_refs if not object_store.verify(parse_reference(ref))]
+        missing = [ref for ref in evidence_refs if not verify_object(parse_reference(ref))]
         if missing:
             raise HTTPException(status_code=409, detail={"missingEvidence": missing})
         assertion = dict(payload.get("assertion") or {})

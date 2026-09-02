@@ -428,9 +428,37 @@ class TeamPostgresTests(unittest.TestCase):
             def has(self, _: str) -> bool:
                 raise RuntimeError("synthetic object storage outage")
 
-        unhealthy = TestClient(create_app(self.repository, UnavailableObjectStore(), Tokens())).get("/v1/health")
+            def verify(self, _: str) -> bool:
+                raise RuntimeError("synthetic object storage outage")
+
+            def put_file(self, *_: object) -> None:
+                raise RuntimeError("synthetic object storage outage")
+
+            def open(self, _: str):
+                raise RuntimeError("synthetic object storage outage")
+
+        unavailable_client = TestClient(create_app(self.repository, UnavailableObjectStore(), Tokens()))
+        unhealthy = unavailable_client.get("/v1/health")
         self.assertEqual(unhealthy.status_code, 503, unhealthy.text)
         self.assertEqual(unhealthy.json()["checks"], {"database": True, "objectStore": False})
+        unavailable_capture = unavailable_client.post(
+            "/v1/captures",
+            headers=member,
+            json={"text": "must fail closed during object-store outage", "spaceId": space},
+        )
+        self.assertEqual(unavailable_capture.status_code, 503, unavailable_capture.text)
+        self.assertEqual(unavailable_capture.json()["detail"], "Evidence storage is unavailable")
+        unavailable_proposal = unavailable_client.post(
+            "/v1/proposals",
+            headers=member,
+            json={
+                "spaceId": space,
+                "evidenceRefs": ["sha256:" + "0" * 64],
+                "assertion": {"body": "must fail closed during object-store outage"},
+            },
+        )
+        self.assertEqual(unavailable_proposal.status_code, 503, unavailable_proposal.text)
+        self.assertEqual(unavailable_proposal.json()["detail"], "Evidence storage is unavailable")
 
         console = client.get("/console")
         self.assertEqual(console.status_code, 200)
