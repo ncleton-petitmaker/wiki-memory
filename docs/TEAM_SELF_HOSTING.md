@@ -52,6 +52,8 @@ Compose volumes are durability, not backup. This topology is single-node and is 
 
 Set `secrets.existingSecret` when a controller manages credentials. That Secret must provide `DATABASE_URL`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `WIKI_MEMORY_BOOTSTRAP_TOKEN` (which may be empty after OIDC bootstrap), and a separate `WIKI_MEMORY_RESTORE_ATTESTATION_TOKEN`. If internal storage is enabled, it must also provide `POSTGRES_PASSWORD`, `MINIO_ROOT_USER`, and `MINIO_ROOT_PASSWORD`. When it is set, the chart does not render an application credential Secret; internal storage passwords are never rendered directly into a workload spec.
 
+The chart accepts only `ghcr.io/ncleton-petitmaker/wiki-memory` with a lowercase `sha256:<64 hex>` digest. It then repeats the check in a non-privileged `image-policy` init container, before either API or worker can start. This prevents a mutable tag or a post-render image substitution from silently becoming an application deployment.
+
 Expose the Service only through TLS ingress/API gateway. The Helm chart enables a deny-by-default `NetworkPolicy`: set `networkPolicy.apiIngress` to the gateway peer selector and use the exact `networkPolicy.*CIDRs` for cluster DNS, OIDC, PostgreSQL, object storage, and optionally OTLP. The chart refuses an enabled policy without those required boundaries; it does not accept hostnames as a pretend domain firewall. NetworkPolicy enforcement also requires a CNI that implements it. Nested teams are intentionally unsupported in V1; map OIDC groups directly to Wiki Memory spaces.
 
 Start from an explicit policy like the following, replacing every address from

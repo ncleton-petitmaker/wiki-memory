@@ -11,6 +11,18 @@ spec:
     spec:
       automountServiceAccountToken: false
       securityContext: {runAsNonRoot: true, seccompProfile: {type: RuntimeDefault}}
+      initContainers:
+        # Helm validates the input shape at render time. This in-image check
+        # repeats it at pod startup so API/worker never run after an admission
+        # controller or a rendered manifest has changed the image reference.
+        - name: image-policy
+          image: {{ include "wiki-memory.image" $ }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          command: [python, -m, wiki_memory.compose_policy]
+          env:
+            - {name: WIKI_MEMORY_IMAGE, value: {{ include "wiki-memory.image" $ | quote }}}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]
       containers:
         - name: {{ $component }}
           image: {{ include "wiki-memory.image" $ }}

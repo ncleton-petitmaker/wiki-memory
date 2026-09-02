@@ -1,7 +1,7 @@
 # Non-deployable CI fixture for the self-contained evaluation topology. It
 # exercises the internal PostgreSQL/MinIO manifests and their NetworkPolicies.
 image:
-  repository: ghcr.io/example/wiki-memory
+  repository: ghcr.io/ncleton-petitmaker/wiki-memory
   digest: sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
 oidc:
   issuer: https://identity.example.test

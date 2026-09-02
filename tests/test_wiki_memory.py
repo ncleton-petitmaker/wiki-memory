@@ -476,7 +476,7 @@ class WikiMemoryTests(unittest.TestCase):
         manifest = json.loads((ROOT / ".codex-plugin" / "plugin.json").read_text(encoding="utf-8"))
         self.assertEqual(manifest["name"], "wiki-memory")
         self.assertEqual(manifest["license"], "MIT")
-        self.assertEqual(manifest["version"], "1.0.0-alpha.11")
+        self.assertEqual(manifest["version"], "1.0.0-alpha.12")
         self.assertEqual(manifest["interface"]["defaultPrompt"][0], "Commençons.")
         self.assertTrue(all("$wiki-memory" not in prompt for prompt in manifest["interface"]["defaultPrompt"]))
         self.assertTrue(all("Use " not in prompt for prompt in manifest["interface"]["defaultPrompt"]))

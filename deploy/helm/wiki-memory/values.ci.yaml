@@ -1,7 +1,7 @@
 # Non-deployable CI fixture. It supplies every fail-closed input so Helm can
 # render the chart without weakening the production defaults in values.yaml.
 image:
-  repository: ghcr.io/example/wiki-memory
+  repository: ghcr.io/ncleton-petitmaker/wiki-memory
   digest: sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
 oidc:
   issuer: https://identity.example.test

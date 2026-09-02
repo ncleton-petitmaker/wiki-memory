@@ -84,7 +84,26 @@ def main() -> int:
     require("@sha256:" in (ROOT / "deploy/team/.env.example").read_text(encoding="utf-8"), "Compose example must require a digest placeholder", errors)
     require("USER wiki-memory" in dockerfile, "Team image must run as non-root", errors)
     require("--require-hashes" in dockerfile, "Team image dependencies must be hash-locked", errors)
-    require("image.digest must be set" in validate, "Helm must reject mutable application images", errors)
+    require(
+        "image.digest must be set" in validate
+        and 'regexMatch "^sha256:[a-f0-9]{64}$"' in validate
+        and 'image.repository must be the official Wiki Memory GHCR repository' in validate,
+        "Helm must reject mutable, malformed, or untrusted application images",
+        errors,
+    )
+    require(
+        "name: image-policy" in workloads
+        and "wiki_memory.compose_policy" in workloads
+        and "WIKI_MEMORY_IMAGE" in workloads,
+        "Helm API and workers must be gated by the executable image policy",
+        errors,
+    )
+    require(
+        "Reject a mutable Helm application image" in ci_workflow
+        and "--set image.digest=latest" in ci_workflow,
+        "CI must prove Helm rejects a mutable application image",
+        errors,
+    )
     for key in ("POSTGRES_PASSWORD", "MINIO_ROOT_USER", "MINIO_ROOT_PASSWORD"):
         require(key + ":" in secret, f"Helm Secret must contain {key}", errors)
         require("key: " + key in storage, f"Helm storage must reference {key} from Secret", errors)

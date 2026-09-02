@@ -69,6 +69,15 @@ jobs:
       - run: >-
           helm template wiki-memory-internal deploy/helm/wiki-memory --namespace wiki-memory-ci
           --values deploy/helm/wiki-memory/values.internal-ci.yaml > "$RUNNER_TEMP/wiki-memory-internal-rendered.yaml"
+      - name: Reject a mutable Helm application image
+        run: |
+          if helm template wiki-memory-invalid deploy/helm/wiki-memory \
+            --namespace wiki-memory-ci \
+            --values deploy/helm/wiki-memory/values.ci.yaml \
+            --set image.digest=latest; then
+            echo "Helm accepted a mutable application image" >&2
+            exit 1
+          fi
       - run: |
           grep --fixed-strings 'kind: NetworkPolicy' "$RUNNER_TEMP/wiki-memory-rendered.yaml"
       - run: |
@@ -77,6 +86,8 @@ jobs:
           grep --fixed-strings 'kind: StatefulSet' "$RUNNER_TEMP/wiki-memory-internal-rendered.yaml"
       - run: |
           grep --fixed-strings 'minio-init' "$RUNNER_TEMP/wiki-memory-internal-rendered.yaml"
+      - run: |
+          grep --fixed-strings 'name: image-policy' "$RUNNER_TEMP/wiki-memory-rendered.yaml"
 
   secrets:
     runs-on: ubuntu-latest
