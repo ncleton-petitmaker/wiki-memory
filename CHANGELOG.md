@@ -4,6 +4,14 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.9] - 2026-09-02
+
+### Added
+
+- Boot the full Compose reference topology on every CI run and call its health
+  endpoint. Release publication now repeats that smoke test using the exact
+  pushed OCI digest after Cosign signing.
+
 ## [1.0.0-alpha.8] - 2026-09-02
 
 ### Fixed
@@ -108,7 +116,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.8...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.9...HEAD
+[1.0.0-alpha.9]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.9
 [1.0.0-alpha.8]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.8
 [1.0.0-alpha.7]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.7
 [1.0.0-alpha.6]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.6

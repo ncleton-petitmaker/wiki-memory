@@ -134,8 +134,36 @@ jobs:
       - uses: sigstore/cosign-installer@v4.1.2
       - run: cosign sign --yes ghcr.io/${{ github.repository }}@${{ steps.build.outputs.digest }}
 
+  compose-smoke:
+    needs: image
+    runs-on: ubuntu-latest
+    env:
+      WIKI_MEMORY_IMAGE: ghcr.io/${{ github.repository }}@${{ needs.image.outputs.digest }}
+      POSTGRES_PASSWORD: synthetic-postgres-password
+      MINIO_ROOT_USER: wiki-memory-ci
+      MINIO_ROOT_PASSWORD: synthetic-minio-password
+      OIDC_GROUP_SPACE_MAP: '{}'
+      WIKI_MEMORY_BOOTSTRAP_TOKEN: synthetic-bootstrap-token
+      WIKI_MEMORY_RESTORE_ATTESTATION_TOKEN: synthetic-restore-attestation-token
+      WIKI_MEMORY_TEAM_PLUGIN_TRUST_KEYS: '{}'
+      WIKI_MEMORY_TEAM_APPROVED_PLUGIN_IDS: '[]'
+      POSTGRES_MAX_CONNECTIONS: '64'
+    steps:
+      - uses: actions/checkout@v7
+      - uses: docker/login-action@v4.6.0
+        with: {registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}"}
+      - run: docker compose --project-name wiki-memory-release-compose --file deploy/team/docker-compose.yml config
+      - run: >-
+          docker compose --project-name wiki-memory-release-compose
+          --file deploy/team/docker-compose.yml up --detach --wait --wait-timeout 120
+      - run: curl --fail --retry 12 --retry-delay 2 http://127.0.0.1:8787/v1/health
+      - if: always()
+        run: >-
+          docker compose --project-name wiki-memory-release-compose
+          --file deploy/team/docker-compose.yml down --volumes --remove-orphans
+
   publish-release:
-    needs: [artifacts, image]
+    needs: [artifacts, image, compose-smoke]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

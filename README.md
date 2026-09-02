@@ -2,7 +2,7 @@
 
 Wiki Memory is an MIT, local-first, self-hosted memory engine with a capability-based plugin architecture. Solo mode works offline with no account or server. The optional `team` bundle adds OIDC identities, shared spaces, ACLs, review, audit, and replication without becoming a Core dependency.
 
-Current version: `1.0.0-alpha.8`. The executable V1 foundation is present; stable `1.0.0` remains gated on production recovery evidence and an external audit. The exact evidence status is recorded in [Release evidence](docs/RELEASE_EVIDENCE.md).
+Current version: `1.0.0-alpha.9`. The executable V1 foundation is present; stable `1.0.0` remains gated on production recovery evidence and an external audit. The exact evidence status is recorded in [Release evidence](docs/RELEASE_EVIDENCE.md).
 
 ## Canonical model
 

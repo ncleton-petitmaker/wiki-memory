@@ -27,6 +27,7 @@ def main() -> int:
     ci_values = (ROOT / "deploy/helm/wiki-memory/values.ci.yaml").read_text(encoding="utf-8")
     internal_ci_values = (ROOT / "deploy/helm/wiki-memory/values.internal-ci.yaml").read_text(encoding="utf-8")
     release_workflow = (ROOT / ".github/workflows/release.yml").read_text(encoding="utf-8")
+    ci_workflow = (ROOT / ".github/workflows/ci.yml").read_text(encoding="utf-8")
 
     require("127.0.0.1:8787:8787" in compose, "Compose API must bind only to loopback", errors)
     require("read_only: true" in compose and "no-new-privileges:true" in compose, "Compose must harden API/worker", errors)
@@ -35,6 +36,22 @@ def main() -> int:
         "WIKI_MEMORY_TEAM_PLUGIN_TRUST_KEYS:?set" in compose
         and "WIKI_MEMORY_TEAM_APPROVED_PLUGIN_IDS:?set" in compose,
         "Compose must require an explicit external plugin trust policy",
+        errors,
+    )
+    require(
+        "compose-smoke:" in ci_workflow
+        and "docker compose --project-name wiki-memory-compose-ci" in ci_workflow
+        and "up --detach --wait --wait-timeout 120" in ci_workflow
+        and "curl --fail --retry 12" in ci_workflow,
+        "CI must boot the Compose topology and call its health endpoint",
+        errors,
+    )
+    require(
+        "compose-smoke:" in release_workflow
+        and "needs: [artifacts, image, compose-smoke]" in release_workflow
+        and "wiki-memory-release-compose" in release_workflow
+        and "WIKI_MEMORY_IMAGE: ghcr.io/${{ github.repository }}@${{ needs.image.outputs.digest }}" in release_workflow,
+        "Release publication must wait for a smoke test of the exact pushed image digest",
         errors,
     )
     require("WIKI_MEMORY_IMAGE:-" not in compose and "build:" not in compose, "Compose reference deployment must not use mutable/default or locally built images", errors)

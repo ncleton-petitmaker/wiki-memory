@@ -117,3 +117,29 @@ jobs:
           sudo apt-get install --yes postgresql
           export PATH="$(pg_config --bindir):$PATH"
           python scripts/team_pitr_rehearsal.py
+
+  compose-smoke:
+    runs-on: ubuntu-latest
+    env:
+      WIKI_MEMORY_IMAGE: wiki-memory-compose-ci
+      POSTGRES_PASSWORD: synthetic-postgres-password
+      MINIO_ROOT_USER: wiki-memory-ci
+      MINIO_ROOT_PASSWORD: synthetic-minio-password
+      OIDC_GROUP_SPACE_MAP: '{}'
+      WIKI_MEMORY_BOOTSTRAP_TOKEN: synthetic-bootstrap-token
+      WIKI_MEMORY_RESTORE_ATTESTATION_TOKEN: synthetic-restore-attestation-token
+      WIKI_MEMORY_TEAM_PLUGIN_TRUST_KEYS: '{}'
+      WIKI_MEMORY_TEAM_APPROVED_PLUGIN_IDS: '[]'
+      POSTGRES_MAX_CONNECTIONS: '64'
+    steps:
+      - uses: actions/checkout@v7
+      - run: docker build --tag "$WIKI_MEMORY_IMAGE" --file deploy/team/Dockerfile .
+      - run: docker compose --project-name wiki-memory-compose-ci --file deploy/team/docker-compose.yml config
+      - run: >-
+          docker compose --project-name wiki-memory-compose-ci
+          --file deploy/team/docker-compose.yml up --detach --wait --wait-timeout 120
+      - run: curl --fail --retry 12 --retry-delay 2 http://127.0.0.1:8787/v1/health
+      - if: always()
+        run: >-
+          docker compose --project-name wiki-memory-compose-ci
+          --file deploy/team/docker-compose.yml down --volumes --remove-orphans
