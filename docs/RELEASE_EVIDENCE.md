@@ -47,7 +47,7 @@ and [TEAM_SELF_HOSTING.md](TEAM_SELF_HOSTING.md) for the operator procedures.
 
 ## Stable-tag control
 
-The release workflow treats a semantic pre-release such as `v1.0.0-alpha.3`
+The release workflow treats a semantic pre-release such as `v1.0.0-alpha.4`
 as an alpha. A stable tag such as `v1.0.0` first enters the GitHub
 `stable-release` environment. Configure that environment with required
 reviewers and its three variables, each pointing to a reviewable HTTPS record:

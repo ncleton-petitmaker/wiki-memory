@@ -4,6 +4,14 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.4] - 2026-09-02
+
+- Stop publishing untraceable benchmark numbers as release evidence.
+- Require a reviewable full-scale performance evidence bundle before a stable
+  release, alongside production recovery and independent security review.
+- Mark every pre-release explicitly in GitHub Release, including future alpha,
+  beta, and release-candidate tags.
+
 ## [1.0.0-alpha.3] - 2026-09-02
 
 - Fix release and CI Helm assertions to use POSIX `grep`, available on every
@@ -75,7 +83,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.3...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.4...HEAD
+[1.0.0-alpha.4]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.4
 [1.0.0-alpha.3]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.3
 [1.0.0-alpha.2]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.2
 [1.0.0-alpha.1]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.1
