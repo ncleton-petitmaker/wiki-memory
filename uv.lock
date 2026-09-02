@@ -2067,7 +2067,7 @@ wheels = [
 
 [[package]]
 name = "wiki-memory-agent"
-version = "1.0.0a6"
+version = "1.0.0a7"
 source = { editable = "." }
 dependencies = [
     { name = "jsonschema" },

@@ -4,6 +4,11 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.7] - 2026-09-02
+
+- Retain successful 100k local-QMD and 1M Team performance reports.
+- Reserve PostgreSQL connection headroom for the 100-stream Team profile.
+
 ## [1.0.0-alpha.6] - 2026-09-02
 
 - Give the immutable-release publication transition a checkout, so `gh release
@@ -95,7 +100,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.6...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.7...HEAD
+[1.0.0-alpha.7]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.7
 [1.0.0-alpha.6]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.6
 [1.0.0-alpha.5]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.5
 [1.0.0-alpha.4]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.4
