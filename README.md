@@ -1,6 +1,40 @@
-# Wiki Memory
+<p align="center">
+  <img src="assets/wiki-memory-hero.svg" alt="Wiki Memory — Your knowledge. Structured, sourced, and yours." width="100%">
+</p>
 
-Wiki Memory is an MIT, local-first, self-hosted memory engine with a capability-based plugin architecture. Solo mode works offline with no account or server. The optional `team` bundle adds OIDC identities, shared spaces, ACLs, review, audit, and replication without becoming a Core dependency.
+<p align="center">
+  <a href="https://github.com/ncleton-petitmaker/wiki-memory/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ncleton-petitmaker/wiki-memory/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/ncleton-petitmaker/wiki-memory/releases"><img alt="Release" src="https://img.shields.io/github/v/release/ncleton-petitmaker/wiki-memory?display_name=tag&sort=semver"></a>
+  <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/license-MIT-7cf7c2"></a>
+  <a href="https://www.python.org/"><img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-76a9ff"></a>
+  <img alt="macOS, Linux, Windows" src="https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-c4b5fd">
+</p>
+
+<p align="center">
+  <strong>A memory you can trust because it keeps the receipts.</strong><br>
+  Local-first for one person. Governed, auditable, and self-hosted for a team.
+</p>
+
+<p align="center">
+  <a href="#solo-quick-start"><strong>Get started</strong></a> ·
+  <a href="#plugins-and-sources">Plugins</a> ·
+  <a href="#optional-team-deployment">Teams</a> ·
+  <a href="docs/ARCHITECTURE.md">Architecture</a> ·
+  <a href="README.fr.md">Français</a>
+</p>
+
+---
+
+## Your knowledge. Structured, sourced, and yours.
+
+Wiki Memory is an MIT, local-first, self-hosted memory engine with a capability-based plugin architecture. Start offline with no account or server. Add the optional `team` bundle only when you need shared spaces, OIDC identities, ACLs, review, audit, and replication.
+
+Every answer can retain its original evidence, dates, author, and exact extractor version. The canonical record is append-only; Markdown, search, summaries, and future graph views are rebuildable projections.
+
+| Built for daily use | Built for trust |
+| --- | --- |
+| Capture a note, a file, an audio recording, a social save, or a database record through the same connector contract. | No plugin writes directly into your derived knowledge. Evidence is content-addressed and durable before its event commits. |
+| Keep everything private by default, readable in Markdown and usable offline. | Team sharing is explicit. ACLs are applied before search, contradictions go to review, and no semantic merge happens silently. |
 
 Current version: `1.0.0-alpha.24`. The executable V1 foundation is present; stable `1.0.0` remains gated on production recovery evidence and an external audit. The exact evidence status is recorded in [Release evidence](docs/RELEASE_EVIDENCE.md).
 

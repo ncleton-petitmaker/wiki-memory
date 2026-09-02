@@ -1,6 +1,39 @@
-# Wiki Memory
+<p align="center">
+  <img src="assets/wiki-memory-hero.svg" alt="Wiki Memory — Votre connaissance, structurée, sourcée, à vous." width="100%">
+</p>
+
+<p align="center">
+  <a href="https://github.com/ncleton-petitmaker/wiki-memory/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/ncleton-petitmaker/wiki-memory/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/ncleton-petitmaker/wiki-memory/releases"><img alt="Release" src="https://img.shields.io/github/v/release/ncleton-petitmaker/wiki-memory?display_name=tag&sort=semver"></a>
+  <a href="LICENSE"><img alt="Licence MIT" src="https://img.shields.io/badge/licence-MIT-7cf7c2"></a>
+  <a href="https://www.python.org/"><img alt="Python 3.10+" src="https://img.shields.io/badge/Python-3.10%2B-76a9ff"></a>
+</p>
+
+<p align="center">
+  <strong>Une mémoire fiable parce qu’elle conserve les preuves.</strong><br>
+  Locale et personnelle au départ ; gouvernée, auditable et self-hosted pour une équipe.
+</p>
+
+<p align="center">
+  <a href="#démarrage-solo"><strong>Démarrer</strong></a> ·
+  <a href="#plugins">Plugins</a> ·
+  <a href="#team-optionnel">Équipes</a> ·
+  <a href="docs/ARCHITECTURE.md">Architecture</a> ·
+  <a href="README.md">English</a>
+</p>
+
+---
+
+## Votre connaissance. Structurée, sourcée, à vous.
 
 Wiki Memory est un moteur de mémoire MIT, local-first, self-hosted et extensible par plugins. Il fonctionne seul, hors ligne, sans compte. Le bundle optionnel `team` ajoute OIDC, espaces partagés, ACL, revue, audit et réplication ; il n’est jamais une dépendance du mode solo.
+
+Chaque réponse peut conserver sa preuve originale, ses dates, son auteur et la version exacte de l’extracteur. Le journal append-only est canonique ; Markdown, recherche, synthèses et futur graphe ne sont que des projections reconstruisibles.
+
+| Pensé pour le quotidien | Pensé pour la confiance |
+| --- | --- |
+| Capturez une note, un fichier, un audio, un contenu social ou une donnée métier via le même contrat de connecteur. | Aucun plugin n’écrit directement dans la connaissance dérivée. La preuve est adressée par contenu et durable avant son événement. |
+| Tout reste privé par défaut, lisible en Markdown et utilisable hors ligne. | Le partage Team est explicite. Les ACL filtrent avant la recherche ; les contradictions passent en revue ; aucune fusion sémantique n’est silencieuse. |
 
 Version actuelle : `1.0.0-alpha.24`. La fondation V1 est exécutable, mais le tag stable `1.0.0` reste conditionné à une restauration sur l’infrastructure de production et à un audit externe. L’état exact des preuves est consigné dans [Évidence de release](docs/RELEASE_EVIDENCE.md).
 
