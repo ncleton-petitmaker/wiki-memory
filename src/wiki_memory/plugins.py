@@ -631,13 +631,22 @@ class IsolatedPluginHost:
 
     @staticmethod
     def _safe_environment(runtime_dir: Path) -> dict[str, str]:
-        return {
+        environment = {
             "PATH": os.defpath,
             "HOME": str(runtime_dir),
             "TMPDIR": str(runtime_dir),
             "LANG": os.environ.get("LANG", "C.UTF-8"),
             "LC_ALL": os.environ.get("LC_ALL", "C.UTF-8"),
         }
+        # A Windows executable process needs these OS bootstrap variables to
+        # locate system DLLs.  They reveal no user secret or filesystem scope,
+        # unlike inheriting the complete parent environment.
+        if os.name == "nt":
+            for name in ("SYSTEMROOT", "WINDIR", "COMSPEC"):
+                value = os.environ.get(name)
+                if value:
+                    environment[name] = value
+        return environment
 
     @classmethod
     async def start(

@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import BinaryIO, Iterator
 
-from .config import MemoryError, safe_child
+from .config import MemoryError
 
 
 class ObjectStore(ABC):
@@ -76,7 +76,10 @@ class FileObjectStore(ObjectStore):
     def _path(self, digest: str) -> Path:
         if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest.lower()):
             raise MemoryError("Invalid SHA-256 digest.")
-        return safe_child(self.root, Path(digest[:2]) / digest[2:4] / digest)
+        # A validated hexadecimal digest is intrinsically a safe relative
+        # address.  Construct it directly: generic path resolution on Windows
+        # can misclassify a not-yet-created content-addressed child.
+        return self.root / digest[:2] / digest[2:4] / digest
 
     def has(self, digest: str) -> bool:
         return self._path(digest).is_file()

@@ -9,7 +9,7 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import BinaryIO, Iterator
 
-from .config import MemoryError, safe_child, utc_now
+from .config import MemoryError, utc_now
 
 
 @dataclass(frozen=True)
@@ -39,7 +39,10 @@ class EvidenceStore:
         self.root.mkdir(parents=True, exist_ok=True)
 
     def _blob_path(self, digest: str) -> Path:
-        return safe_child(self.root, Path(digest[:2]) / digest[2:4] / digest)
+        # Digest validation makes these path components safe on every
+        # platform; avoid generic path resolution for a child that may not
+        # exist yet on Windows.
+        return self.root / digest[:2] / digest[2:4] / digest
 
     def _metadata_path(self, digest: str) -> Path:
         return self._blob_path(digest).with_suffix(".metadata.json")
