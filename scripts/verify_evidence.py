@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import re
 import sys
 from pathlib import Path
@@ -25,6 +26,44 @@ def sha256_file(path: Path) -> str:
         for block in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def validate_report(path: Path) -> list[str]:
+    """Verify the minimal semantic contract of a retained evidence report.
+
+    A checksum proves that bytes have not changed after retention; it does not
+    prove the bytes describe a successful or complete run. Keep this contract
+    intentionally small for generic benchmark reports, but make the crash
+    report strict enough that it cannot masquerade as durability evidence
+    without recording the acknowledgement and rebuild boundary it claims.
+    """
+
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return [f"invalid JSON evidence report {path.name}: {type(exc).__name__}"]
+    if not isinstance(value, dict):
+        return [f"evidence report must be an object: {path.name}"]
+    if value.get("ok") is not True:
+        return [f"evidence report does not record success: {path.name}"]
+    if value.get("test") != "solo-kill9-durability":
+        return []
+
+    result = value.get("result")
+    target = value.get("target")
+    rebuild = value.get("rebuild")
+    if not isinstance(result, dict) or not isinstance(target, dict) or not isinstance(rebuild, dict):
+        return [f"crash evidence report is incomplete: {path.name}"]
+    positive_counts = ("rounds", "terminatedWorkers", "acknowledgedEvents", "ledgerEvents")
+    if any(not isinstance(result.get(field), int) or result[field] < 1 for field in positive_counts):
+        return [f"crash evidence report has invalid counts: {path.name}"]
+    if result["ledgerEvents"] < result["acknowledgedEvents"]:
+        return [f"crash evidence report loses acknowledged events: {path.name}"]
+    if not all(target.get(field) is True for field in (
+        "acknowledgedEventsRecovered", "canonicalEvidenceVerified", "projectionRebuildSucceeded",
+    )) or rebuild.get("rebuilt") is not True:
+        return [f"crash evidence report does not prove recovery: {path.name}"]
+    return []
 
 
 def verify(directory: Path) -> list[str]:
@@ -60,6 +99,8 @@ def verify(directory: Path) -> list[str]:
         actual = sha256_file(report)
         if actual != expected:
             errors.append(f"checksum mismatch for {filename}: expected {expected}, got {actual}")
+            continue
+        errors.extend(validate_report(report))
 
     actual_reports = {path.name for path in directory.glob("*.json") if path.is_file() and not path.is_symlink()}
     unlisted = sorted(actual_reports - listed)

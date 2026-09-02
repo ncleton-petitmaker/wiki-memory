@@ -4,6 +4,12 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 
 ## [Unreleased]
 
+## [1.0.0-alpha.18] - 2026-09-02
+
+### Reliability
+
+- Retain a successful 100-round APFS solo `kill -9` campaign, and verify that every retained evidence report is valid JSON, declares success, and—when it is a crash report—contains the exact acknowledgement, evidence, and projection-rebuild outcome required for its claim.
+
 ## [1.0.0-alpha.17] - 2026-09-02
 
 ### Fixed
@@ -167,7 +173,8 @@ All notable user-facing changes are documented here. Wiki Memory follows [Semant
 - Optional Syncthing synchronization configured separately for both folders.
 - Source-grounded Markdown vaults, local search, document ingestion, social capture, quality checks, and privacy safeguards.
 
-[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.17...HEAD
+[Unreleased]: https://github.com/ncleton-petitmaker/wiki-memory/compare/v1.0.0-alpha.18...HEAD
+[1.0.0-alpha.18]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.18
 [1.0.0-alpha.17]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.17
 [1.0.0-alpha.16]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.16
 [1.0.0-alpha.15]: https://github.com/ncleton-petitmaker/wiki-memory/releases/tag/v1.0.0-alpha.15

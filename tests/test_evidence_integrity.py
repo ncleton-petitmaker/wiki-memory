@@ -36,6 +36,21 @@ class EvidenceIntegrityTests(unittest.TestCase):
             self.write_report(directory, "other.json")
             self.assertTrue(any("missing from checksum manifest" in error for error in verify(directory)))
 
+    def test_rejects_retained_failure_or_incomplete_crash_report(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            directory = Path(temporary)
+            _, report = self.write_report(directory)
+            report.write_text('{"ok":false}\n', encoding="utf-8")
+            digest = hashlib.sha256(report.read_bytes()).hexdigest()
+            (directory / "SHA256SUMS").write_text(f"{digest}  {report.name}\n", encoding="utf-8")
+            self.assertTrue(any("does not record success" in error for error in verify(directory)))
+
+            crash = directory / "crash.json"
+            crash.write_text('{"ok":true,"test":"solo-kill9-durability"}\n', encoding="utf-8")
+            crash_digest = hashlib.sha256(crash.read_bytes()).hexdigest()
+            (directory / "SHA256SUMS").write_text(f"{crash_digest}  {crash.name}\n", encoding="utf-8")
+            self.assertTrue(any("crash evidence report is incomplete" in error for error in verify(directory)))
+
     def test_rejects_nonportable_or_unsafe_checksum_entries(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)

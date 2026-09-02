@@ -2,5 +2,5 @@ apiVersion: v2
 name: wiki-memory
 description: Self-hosted Wiki Memory Team API, workers, PostgreSQL and object storage
 type: application
-version: 1.0.0-alpha.17
-appVersion: "1.0.0-alpha.17"
+version: 1.0.0-alpha.18
+appVersion: "1.0.0-alpha.18"
